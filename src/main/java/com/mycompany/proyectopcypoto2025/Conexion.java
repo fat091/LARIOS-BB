@@ -1,0 +1,1 @@
+package com.mycompany.proyectopcypoto2025; public class Conexion{ public final Nodo a,b; public Conexion(Nodo a,Nodo b){this.a=a;this.b=b;} }

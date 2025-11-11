@@ -1,0 +1,1 @@
+package com.mycompany.proyectopcypoto2025; import java.awt.Color; public class Nodo{ public enum Tipo{PROCESO,RECURSO} public String nombre; public int x,y; public Tipo tipo; public Color fill; public Nodo(String n,int x,int y,Tipo t,Color f){nombre=n;this.x=x;this.y=y;this.tipo=t;this.fill=f;} }
