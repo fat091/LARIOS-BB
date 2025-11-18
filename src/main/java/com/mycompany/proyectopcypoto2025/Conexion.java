@@ -8,21 +8,15 @@ public class Conexion {
     public final Nodo a, b;
     public String etiqueta;     // opcional
 
-    public Conexion(Nodo a, Nodo b) {
-        this.a = a;
-        this.b = b;
-    }
-
+    public Conexion(Nodo a, Nodo b) { this.a = a; this.b = b; }
     public void setEtiqueta(String e) { this.etiqueta = e; }
 
-    /** Dibuja la arista con clipping a bordes, paralelas y self-loop. Usa el color/stroke ya configurado en g2. */
+    /** Dibuja la arista con clipping a bordes, paralelas y self-loop. */
     public void dibujar(Graphics2D g2, List<Conexion> todas) {
-        if (a == b) {
-            dibujarSelfLoop(g2);
-            return;
-        }
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // índice de paralela (centrado): -k ... 0 ... +k
+        if (a == b) { dibujarSelfLoop(g2); return; }
+
         int[] idx = paraleloIndex(this, todas);
         int index = idx[0], count = idx[1];
 
@@ -30,14 +24,12 @@ public class Conexion {
         Point2D cb = new Point2D.Double(b.x, b.y);
 
         if (count <= 1) {
-            // recta
             Point2D pa = a.bordeHacia(cb);
             Point2D pb = b.bordeHacia(ca);
             g2.draw(new Line2D.Double(pa, pb));
             drawArrowHead(g2, pa, pb);
             drawLabel(g2, etiqueta, mid(pa, pb), -6);
         } else {
-            // curva cuadrática separada en la normal
             double ang = Math.atan2(cb.getY() - ca.getY(), cb.getX() - ca.getX());
             double nx = -Math.sin(ang), ny = Math.cos(ang);
             double dist = 28.0 * index;
@@ -54,7 +46,6 @@ public class Conexion {
             q.setCurve(pa, ctrl, pb);
             g2.draw(q);
 
-            // ángulo al final para la flecha
             double angEnd = Math.atan2(pb.getY() - ctrl.getY(), pb.getX() - ctrl.getX());
             drawArrowHead(g2, pb, angEnd);
             drawLabel(g2, etiqueta, ctrl, -8);
@@ -71,7 +62,6 @@ public class Conexion {
         Arc2D arco = new Arc2D.Double(x, y, w, h, 10, 320, Arc2D.OPEN);
         g2.draw(arco);
 
-        // punta en el extremo
         double ang = Math.toRadians(-10);
         Point2D tip = new Point2D.Double(x + w, y + h / 2.0);
         drawArrowHead(g2, tip, ang);
@@ -79,22 +69,16 @@ public class Conexion {
     }
 
     private static int[] paraleloIndex(Conexion target, List<Conexion> todas) {
-        // agrupa por par no ordenado {a,b}
         int count = 0, idx = 0, seen = 0;
         for (Conexion c : todas) {
-            if (unorderedEquals(c.a, c.b, target.a, target.b)) {
+            if ((c.a == target.a && c.b == target.b) || (c.a == target.b && c.b == target.a)) {
                 if (c == target) idx = seen;
                 seen++;
             }
         }
         count = seen;
-        // centra: 0..n-1 -> -(n-1)/2 .. +(n-1)/2
-        idx -= (count - 1) / 2.0;
+        idx -= (count - 1) / 2.0; // centra alrededor de 0
         return new int[]{idx, count};
-    }
-
-    private static boolean unorderedEquals(Nodo a1, Nodo b1, Nodo a2, Nodo b2) {
-        return (a1 == a2 && b1 == b2) || (a1 == b2 && b1 == a2);
     }
 
     private static Point2D mid(Point2D p, Point2D q) {
@@ -107,7 +91,7 @@ public class Conexion {
     }
 
     private static void drawArrowHead(Graphics2D g2, Point2D tip, double ang) {
-        int L = 12, s = 6;
+        int L = 12;
         int x = (int) Math.round(tip.getX());
         int y = (int) Math.round(tip.getY());
         int x1 = (int) (x - L * Math.cos(ang - Math.PI / 8));

@@ -18,7 +18,7 @@ public class DibujaGrafo extends JPanel {
     private Point off = new Point();
     private boolean deadlock = false;
 
-    // === Animación ===
+    // Animación
     private javax.swing.Timer animTimer;
     private int pasoActual = 0;
     private java.util.List<Conexion> pasos = new ArrayList<>();
@@ -29,157 +29,121 @@ public class DibujaGrafo extends JPanel {
         inicializarControles();
     }
 
-    // =========================================================
-    // === CONFIGURADOR DE GRAFOS DINÁMICO
-    // =========================================================
+    /* =================== API dinámica =================== */
     public void configurarProblema(String tipo) {
-        // Limpieza
-        nodos.clear();
-        aristas.clear();
-        by.clear();
-        repaint();
+        nodos.clear(); aristas.clear(); by.clear(); repaint();
 
         switch (tipo.toLowerCase()) {
-
-            case "productor":
+            case "productor" -> {
                 baseProductorConsumidor();
-                animarSecuencia(Arrays.asList(
-                        new String[]{"P0", "R1"}, // produce
-                        new String[]{"R1", "P1"}  // consume
+                animarSecuencia(java.util.Arrays.asList(
+                        new String[]{"P0","R1"},
+                        new String[]{"R1","P1"}
                 ), false);
-                break;
-
-            case "filosofos":
+            }
+            case "filosofos" -> {
                 baseFilosofos();
-                animarSecuencia(Arrays.asList(
-                        new String[]{"P0", "R0"}, new String[]{"P0", "R1"},
-                        new String[]{"P1", "R1"}, new String[]{"P1", "R2"},
-                        new String[]{"P2", "R2"}, new String[]{"P2", "R3"},
-                        new String[]{"P3", "R3"}, new String[]{"P3", "R4"},
-                        new String[]{"P4", "R4"}, new String[]{"P4", "R0"}
+                animarSecuencia(java.util.Arrays.asList(
+                        new String[]{"P0","R0"}, new String[]{"P0","R1"},
+                        new String[]{"P1","R1"}, new String[]{"P1","R2"},
+                        new String[]{"P2","R2"}, new String[]{"P2","R3"},
+                        new String[]{"P3","R3"}, new String[]{"P3","R4"},
+                        new String[]{"P4","R4"}, new String[]{"P4","R0"}
                 ), false);
-                break;
-
-            case "lectores":
+            }
+            case "lectores" -> {
                 baseLectoresEscritores();
-                animarSecuencia(Arrays.asList(
-                        new String[]{"L1", "DB"},
-                        new String[]{"L2", "DB"},
-                        new String[]{"E1", "DB"}
+                animarSecuencia(java.util.Arrays.asList(
+                        new String[]{"L1","DB"},
+                        new String[]{"L2","DB"},
+                        new String[]{"E1","DB"}
                 ), false);
-                break;
-
-            case "banco":
+            }
+            case "banco" -> {
                 baseBanco();
-                animarSecuencia(Arrays.asList(
-                        new String[]{"C1", "R1"},
-                        new String[]{"R1", "C2"},
-                        new String[]{"C2", "R2"},
-                        new String[]{"R2", "C3"},
-                        new String[]{"C3", "R3"},
-                        new String[]{"R3", "C1"}
+                animarSecuencia(java.util.Arrays.asList(
+                        new String[]{"C1","R1"}, new String[]{"R1","C2"},
+                        new String[]{"C2","R2"}, new String[]{"R2","C3"},
+                        new String[]{"C3","R3"}, new String[]{"R3","C1"}
                 ), true);
-                break;
-
-            case "deadlock":
+            }
+            case "deadlock" -> {
                 baseDeadlockGeneral();
-                animarSecuencia(Arrays.asList(
-                        new String[]{"P0", "R1"},
-                        new String[]{"R1", "P1"},
-                        new String[]{"P1", "R2"},
-                        new String[]{"R2", "P2"},
-                        new String[]{"P2", "R3"},
-                        new String[]{"R3", "P0"}
+                animarSecuencia(java.util.Arrays.asList(
+                        new String[]{"P0","R1"}, new String[]{"R1","P1"},
+                        new String[]{"P1","R2"}, new String[]{"R2","P2"},
+                        new String[]{"P2","R3"}, new String[]{"R3","P0"}
                 ), true);
-                break;
-
-            default:
-                JOptionPane.showMessageDialog(this, "Tipo de problema no reconocido: " + tipo);
+            }
+            default -> JOptionPane.showMessageDialog(this, "Tipo no reconocido: " + tipo);
         }
     }
 
-    // =========================================================
-    // === BASES DE NODOS
-    // =========================================================
+    /* =================== Bases de nodos =================== */
+    private void addN(String n, int x, int y, Nodo.Tipo t, Color f) {
+        Nodo nd = new Nodo(n, x, y, t, f); nodos.add(nd); by.put(n, nd);
+    }
+
     private void baseProductorConsumidor() {
-        addN("P0", 300, 200, Nodo.Tipo.PROCESO, new Color(255, 180, 180)); // Productor
-        addN("R1", 500, 200, Nodo.Tipo.RECURSO, new Color(180, 220, 255)); // Buffer
-        addN("P1", 700, 200, Nodo.Tipo.PROCESO, new Color(200, 255, 200)); // Consumidor
+        addN("P0", 300, 200, Nodo.Tipo.PROCESO, new Color(255,180,180));
+        addN("R1", 500, 200, Nodo.Tipo.RECURSO, new Color(180,220,255));
+        addN("P1", 700, 200, Nodo.Tipo.PROCESO, new Color(200,255,200));
     }
 
     private void baseFilosofos() {
-        // 5 filósofos y 5 recursos (tenedores)
         int cx = 500, cy = 250, r = 150;
         for (int i = 0; i < 5; i++) {
             double ang = Math.toRadians(i * 72);
-            int x = (int) (cx + r * Math.cos(ang));
-            int y = (int) (cy + r * Math.sin(ang));
-            addN("P" + i, x, y, Nodo.Tipo.PROCESO, new Color(255, 240, 180));
+            addN("P"+i, (int)(cx + r * Math.cos(ang)), (int)(cy + r * Math.sin(ang)),
+                    Nodo.Tipo.PROCESO, new Color(255,240,180));
         }
         for (int i = 0; i < 5; i++) {
             double ang = Math.toRadians(i * 72 + 36);
-            int x = (int) (cx + (r - 70) * Math.cos(ang));
-            int y = (int) (cy + (r - 70) * Math.sin(ang));
-            addN("R" + i, x, y, Nodo.Tipo.RECURSO, new Color(180, 200, 255));
+            addN("R"+i, (int)(cx + (r-70) * Math.cos(ang)), (int)(cy + (r-70) * Math.sin(ang)),
+                    Nodo.Tipo.RECURSO, new Color(180,200,255));
         }
     }
 
     private void baseLectoresEscritores() {
-        addN("L1", 300, 150, Nodo.Tipo.PROCESO, new Color(180, 255, 180));
-        addN("L2", 300, 300, Nodo.Tipo.PROCESO, new Color(180, 255, 180));
-        addN("E1", 300, 450, Nodo.Tipo.PROCESO, new Color(255, 200, 180));
-        addN("DB", 550, 300, Nodo.Tipo.RECURSO, new Color(180, 200, 255));
+        addN("L1", 300, 150, Nodo.Tipo.PROCESO, new Color(180,255,180));
+        addN("L2", 300, 300, Nodo.Tipo.PROCESO, new Color(180,255,180));
+        addN("E1", 300, 450, Nodo.Tipo.PROCESO, new Color(255,200,180));
+        addN("DB", 550, 300, Nodo.Tipo.RECURSO, new Color(180,200,255));
     }
 
     private void baseBanco() {
-        addN("C1", 400, 100, Nodo.Tipo.PROCESO, new Color(255, 220, 200));
-        addN("C2", 700, 200, Nodo.Tipo.PROCESO, new Color(255, 220, 200));
-        addN("C3", 400, 300, Nodo.Tipo.PROCESO, new Color(255, 220, 200));
-
-        addN("R1", 550, 100, Nodo.Tipo.RECURSO, new Color(180, 200, 255));
-        addN("R2", 750, 250, Nodo.Tipo.RECURSO, new Color(180, 200, 255));
-        addN("R3", 550, 350, Nodo.Tipo.RECURSO, new Color(180, 200, 255));
+        addN("C1", 400, 100, Nodo.Tipo.PROCESO, new Color(255,220,200));
+        addN("C2", 700, 200, Nodo.Tipo.PROCESO, new Color(255,220,200));
+        addN("C3", 400, 300, Nodo.Tipo.PROCESO, new Color(255,220,200));
+        addN("R1", 550, 100, Nodo.Tipo.RECURSO, new Color(180,200,255));
+        addN("R2", 750, 250, Nodo.Tipo.RECURSO, new Color(180,200,255));
+        addN("R3", 550, 350, Nodo.Tipo.RECURSO, new Color(180,200,255));
     }
 
     private void baseDeadlockGeneral() {
-        addN("P0", 520, 60, Nodo.Tipo.PROCESO, new Color(255, 200, 200));
-        addN("P1", 660, 200, Nodo.Tipo.PROCESO, new Color(255, 240, 160));
-        addN("P2", 520, 340, Nodo.Tipo.PROCESO, new Color(200, 240, 200));
-        addN("R1", 420, 140, Nodo.Tipo.RECURSO, new Color(160, 210, 255));
-        addN("R2", 620, 280, Nodo.Tipo.RECURSO, new Color(160, 200, 255));
-        addN("R3", 420, 280, Nodo.Tipo.RECURSO, new Color(160, 190, 255));
+        addN("P0", 520,  60, Nodo.Tipo.PROCESO, new Color(255,200,200));
+        addN("P1", 660, 200, Nodo.Tipo.PROCESO, new Color(255,240,160));
+        addN("P2", 520, 340, Nodo.Tipo.PROCESO, new Color(200,240,200));
+        addN("R1", 420, 140, Nodo.Tipo.RECURSO, new Color(160,210,255));
+        addN("R2", 620, 280, Nodo.Tipo.RECURSO, new Color(160,200,255));
+        addN("R3", 420, 280, Nodo.Tipo.RECURSO, new Color(160,190,255));
     }
 
-    private void addN(String n, int x, int y, Nodo.Tipo t, Color f) {
-        Nodo nd = new Nodo(n, x, y, t, f);
-        nodos.add(nd);
-        by.put(n, nd);
-    }
-
-    // =========================================================
-    // === ANIMACIÓN PASO A PASO
-    // =========================================================
+    /* =================== Animación =================== */
     private void animarSecuencia(java.util.List<String[]> conexiones, boolean deadlockMode) {
-        aristas.clear();
-        pasos.clear();
-        deadlock = deadlockMode;
-        repaint();
+        aristas.clear(); pasos.clear(); deadlock = deadlockMode; repaint();
 
         for (String[] par : conexiones) {
-            Nodo na = by.get(par[0]);
-            Nodo nb = by.get(par[1]);
-            if (na != null && nb != null)
-                pasos.add(new Conexion(na, nb));
+            Nodo na = by.get(par[0]), nb = by.get(par[1]);
+            if (na != null && nb != null) pasos.add(new Conexion(na, nb));
         }
 
         pasoActual = 0;
-        if (animTimer != null && animTimer.isRunning())
-            animTimer.stop();
+        if (animTimer != null && animTimer.isRunning()) animTimer.stop();
 
         animTimer = new javax.swing.Timer(700, e -> {
             if (pasoActual < pasos.size()) {
-                Conexion actual = pasos.get(pasoActual);
-                aristas.add(actual);
+                aristas.add(pasos.get(pasoActual));
                 pasoActual++;
                 repaint();
             } else {
@@ -189,30 +153,24 @@ public class DibujaGrafo extends JPanel {
         animTimer.start();
     }
 
-    // =========================================================
-    // === INTERACCIÓN MOUSE Y ZOOM
-    // =========================================================
+    /* =================== Interacción =================== */
     private void inicializarControles() {
         MouseAdapter ma = new MouseAdapter() {
             Point last;
-
-            @Override
-            public void mousePressed(MouseEvent e) {
+            @Override public void mousePressed(MouseEvent e) {
                 last = e.getPoint();
                 Point2D w = toWorld(e.getPoint());
                 drag = find(w);
                 if (drag != null) {
-                    off.x = (int) (w.getX() - drag.x);
-                    off.y = (int) (w.getY() - drag.y);
+                    off.x = (int)(w.getX() - drag.x);
+                    off.y = (int)(w.getY() - drag.y);
                 }
             }
-
-            @Override
-            public void mouseDragged(MouseEvent e) {
+            @Override public void mouseDragged(MouseEvent e) {
                 if (drag != null) {
                     Point2D w = toWorld(e.getPoint());
-                    drag.x = (int) w.getX() - off.x;
-                    drag.y = (int) w.getY() - off.y;
+                    drag.x = (int)w.getX() - off.x;
+                    drag.y = (int)w.getY() - off.y;
                     repaint();
                 } else {
                     pan.x += (e.getX() - last.x) / z;
@@ -221,13 +179,10 @@ public class DibujaGrafo extends JPanel {
                 }
                 last = e.getPoint();
             }
-
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent e) {
+            @Override public void mouseWheelMoved(MouseWheelEvent e) {
                 double old = z;
                 z *= (e.getWheelRotation() > 0 ? 0.9 : 1.1);
                 z = Math.max(0.3, Math.min(z, 3));
-
                 Point2D b = toWorld(e.getPoint(), old), a = toWorld(e.getPoint(), z);
                 pan.x += (b.getX() - a.getX());
                 pan.y += (b.getY() - a.getY());
@@ -239,27 +194,19 @@ public class DibujaGrafo extends JPanel {
         addMouseWheelListener(ma);
     }
 
-    private Point2D toWorld(Point p) {
-        return new Point2D.Double(p.x / z - pan.x, p.y / z - pan.y);
-    }
-
-    private Point2D toWorld(Point p, double zz) {
-        return new Point2D.Double(p.x / zz - pan.x, p.y / zz - pan.y);
-    }
+    private Point2D toWorld(Point p) { return new Point2D.Double(p.x / z - pan.x, p.y / z - pan.y); }
+    private Point2D toWorld(Point p, double zz) { return new Point2D.Double(p.x / zz - pan.x, p.y / zz - pan.y); }
 
     private Nodo find(Point2D p) {
-        for (int i = nodos.size() - 1; i >= 0; i--) {
+        for (int i = nodos.size()-1; i>=0; i--) {
             Nodo n = nodos.get(i);
             double dx = p.getX() - n.x, dy = p.getY() - n.y;
-            if (dx * dx + dy * dy <= Nodo.R * Nodo.R)
-                return n;
+            if (dx*dx + dy*dy <= Nodo.R * Nodo.R) return n;
         }
         return null;
     }
 
-    // =========================================================
-    // === DIBUJO PRINCIPAL
-    // =========================================================
+    /* =================== Pintado =================== */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -270,35 +217,18 @@ public class DibujaGrafo extends JPanel {
         g2.translate(pan.x, pan.y);
 
         g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g2.setColor(deadlock ? new Color(200, 60, 60) : new Color(60, 90, 200));
-
-        for (Conexion c : aristas) {
-            c.dibujar(g2, aristas);
-        }
+        g2.setColor(deadlock ? new Color(200,60,60) : new Color(60,90,200));
+        for (Conexion c : aristas) c.dibujar(g2, aristas);
 
         for (Nodo n : nodos) {
             Shape s = n.shape();
-            g2.setColor(n.fill);
-            g2.fill(s);
-            g2.setColor(Color.DARK_GRAY);
-            g2.setStroke(new BasicStroke(1.8f));
-            g2.draw(s);
-
+            g2.setColor(n.fill); g2.fill(s);
+            g2.setColor(Color.DARK_GRAY); g2.setStroke(new BasicStroke(1.8f)); g2.draw(s);
             g2.setColor(Color.BLACK);
-            String t = n.nombre;
             FontMetrics fm = g2.getFontMetrics();
-            g2.drawString(t, (int) (n.x - fm.stringWidth(t) / 2.0),
-                    (int) (n.y + fm.getAscent() / 3.0));
+            g2.drawString(n.nombre, (int)(n.x - fm.stringWidth(n.nombre)/2.0),
+                    (int)(n.y + fm.getAscent()/3.0));
         }
-
         g2.dispose();
-    }
-
-    void ejecutar() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    void evitar() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
