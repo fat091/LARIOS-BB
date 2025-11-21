@@ -36,6 +36,10 @@ public class DibujaGrafo extends JPanel {
 
         if (animTimer != null && animTimer.isRunning()) animTimer.stop();
 
+<<<<<<< HEAD
+=======
+        // Limpiamos la entrada para manejar nombres con o sin espacios, mayúsculas, etc.
+>>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
         String tipoLimpio = tipo.toLowerCase().replace("á", "a").replace("-", " ").replace("ñ", "n").trim();
 
         switch (tipoLimpio) {
@@ -77,6 +81,7 @@ public class DibujaGrafo extends JPanel {
             }
             case "gpu_cluster", "clúster gpu" -> { 
                 baseGpuCluster();
+<<<<<<< HEAD
                 animarSecuencia(java.util.Arrays.asList(
                         new String[]{"J1","I0"}, 
                         new String[]{"J1","G"},  
@@ -84,6 +89,9 @@ public class DibujaGrafo extends JPanel {
                         new String[]{"G","J1"},  
                         new String[]{"J1","K"}   
                 ), false);
+=======
+                // El Grafo GPU se actualiza dinámicamente desde GpuClusterPanel
+>>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
             }
             case "deadlock" -> {
                 baseDeadlockGeneral();
@@ -104,7 +112,11 @@ public class DibujaGrafo extends JPanel {
 
     private void baseProductorConsumidor() {
         addN("P0", 300, 200, Nodo.Tipo.PROCESO, new Color(255,180,180));
+<<<<<<< HEAD
         addN("R1", 500, 200, Nodo.Tipo.RECURSO, new Color(180,220,255)); 
+=======
+        addN("R1", 500, 200, Nodo.Tipo.RECURSO, new Color(180,220,255)); // Buffer
+>>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
         addN("P1", 700, 200, Nodo.Tipo.PROCESO, new Color(200,255,200));
     }
 
@@ -118,11 +130,12 @@ public class DibujaGrafo extends JPanel {
         for (int i = 0; i < 5; i++) {
             double ang = Math.toRadians(i * 72 + 36);
             addN("R"+i, (int)(cx + (r-70) * Math.cos(ang)), (int)(cy + (r-70) * Math.sin(ang)),
-                    Nodo.Tipo.RECURSO, new Color(180,200,255));
+                    Nodo.Tipo.RECURSO, new Color(180,200,255)); // Tenedores
         }
     }
 
     private void baseBarberoDormilon() {
+<<<<<<< HEAD
         addN("B", 100, 200, Nodo.Tipo.PROCESO, new Color(150, 150, 255)); 
         addN("C1", 400, 100, Nodo.Tipo.PROCESO, new Color(255, 180, 180)); 
         addN("C2", 400, 300, Nodo.Tipo.PROCESO, new Color(255, 180, 180)); 
@@ -137,6 +150,22 @@ public class DibujaGrafo extends JPanel {
         addN("F3", 700, 400, Nodo.Tipo.PROCESO, new Color(150, 150, 255)); 
         addN("R1", 300, 150, Nodo.Tipo.RECURSO, new Color(255, 240, 180)); 
         addN("R2", 300, 350, Nodo.Tipo.RECURSO, new Color(180, 200, 255)); 
+=======
+        addN("B", 100, 200, Nodo.Tipo.PROCESO, new Color(150, 150, 255)); // Barbero
+        addN("C1", 400, 100, Nodo.Tipo.PROCESO, new Color(255, 180, 180)); // Cliente 1
+        addN("C2", 400, 300, Nodo.Tipo.PROCESO, new Color(255, 180, 180)); // Cliente 2
+        addN("S", 250, 200, Nodo.Tipo.RECURSO, new Color(180, 220, 255)); // Silla de Corte
+        addN("E", 550, 200, Nodo.Tipo.RECURSO, new Color(200, 255, 200)); // Sillas de Espera (Buffer)
+    }
+    
+    private void baseFumadores() { 
+        addN("A", 100, 250, Nodo.Tipo.PROCESO, new Color(200, 150, 255)); // Agente
+        addN("F1", 700, 100, Nodo.Tipo.PROCESO, new Color(255, 150, 150)); // Fumador 1 (Papel)
+        addN("F2", 700, 250, Nodo.Tipo.PROCESO, new Color(150, 255, 150)); // Fumador 2 (Tabaco)
+        addN("F3", 700, 400, Nodo.Tipo.PROCESO, new Color(150, 150, 255)); // Fumador 3 (Cerillos)
+        addN("R1", 300, 150, Nodo.Tipo.RECURSO, new Color(255, 240, 180)); // Recurso 1 (ej: Papel)
+        addN("R2", 300, 350, Nodo.Tipo.RECURSO, new Color(180, 200, 255)); // Recurso 2 (ej: Tabaco)
+>>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
     }
 
 
@@ -157,9 +186,12 @@ public class DibujaGrafo extends JPanel {
     }
 
     private void baseGpuCluster() {
+<<<<<<< HEAD
         // Un Job representativo para la animación secuencial
         addN("J1", 100, 200, Nodo.Tipo.PROCESO, new Color(255, 150, 150)); 
         
+=======
+>>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
         // Recursos Globales
         addN("G", 550, 200, Nodo.Tipo.RECURSO, new Color(200,180,255)); // Tokens Globales
         addN("K", 700, 200, Nodo.Tipo.RECURSO, new Color(255,200,200)); // Ventanas Colectivas (K)
@@ -169,7 +201,74 @@ public class DibujaGrafo extends JPanel {
         addN("I1", 300, 200, Nodo.Tipo.RECURSO, new Color(180,220,255)); 
         addN("I2", 300, 300, Nodo.Tipo.RECURSO, new Color(180,220,255)); 
 
+<<<<<<< HEAD
         // NOTA: Conexiones de recursos base se añaden en animarSecuencia
+=======
+        // Conexiones de recursos base
+        aristas.add(new Conexion(by.get("I0"), by.get("G")));
+        aristas.add(new Conexion(by.get("I1"), by.get("G")));
+        aristas.add(new Conexion(by.get("I2"), by.get("G")));
+    }
+
+
+    /* =================== Actualizador Dinámico GPU =================== */
+    public void updateGpuClusterGraph(List<Job> trabajos) {
+        if (!by.containsKey("I0")) return; 
+
+        // Limpiar solo las aristas dinámicas (las de asignación de Jobs)
+        aristas.removeIf(c -> c.a.tipo == Nodo.Tipo.PROCESO || c.b.tipo == Nodo.Tipo.PROCESO);
+
+        for (Job J : trabajos) {
+            Nodo nJ = by.get(J.id);
+            if (nJ == null) {
+                // Posición dinámica para trabajos
+                int yPos = J.prioridadAlta ? 50 : 350;
+                addN(J.id, 100 + (trabajos.indexOf(J) * 4), yPos, Nodo.Tipo.PROCESO, J.prioridadAlta ? new Color(255, 150, 150) : new Color(150, 150, 255));
+                nJ = by.get(J.id);
+            }
+            
+            // 1. Actualizar color/estado del nodo Job
+            Color c = switch(J.estado) {
+                case WAIT -> J.prioridadAlta ? new Color(255, 200, 200) : new Color(200, 200, 255);
+                case RUN -> new Color(150, 255, 150);
+                case BARRIER -> new Color(255, 255, 100);
+                case COMM -> new Color(255, 150, 255);
+                case PREEMPTED, ABORTED -> new Color(100, 100, 100);
+                case FINISHED -> Color.LIGHT_GRAY;
+            };
+            nJ.fill = c;
+
+            // 2. Conexión Job -> Isla (Asignación Gang)
+            if (J.islaAsignada != -1) {
+                String islaId = "I" + J.islaAsignada;
+                Nodo nI = by.get(islaId);
+                if (nI != null) {
+                    Conexion c1 = new Conexion(nJ, nI);
+                    c1.setEtiqueta("GPUs/Tokens");
+                    aristas.add(c1);
+                }
+            }
+            
+            // 3. Conexión Job -> Ventanas/Tokens Globales (Colectiva)
+            if (J.estado == Job.Estado.COMM) {
+                Nodo nK = by.get("K");
+                Nodo nG = by.get("G");
+                
+                if (nK != null) {
+                    Conexion c2 = new Conexion(nJ, nK);
+                    c2.setEtiqueta("Ventana");
+                    aristas.add(c2);
+                }
+                
+                if (nG != null) {
+                    Conexion c3 = new Conexion(nJ, nG);
+                    c3.setEtiqueta("Tokens Globales");
+                    aristas.add(c3);
+                }
+            }
+        }
+        repaint();
+>>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
     }
 
 
@@ -221,7 +320,7 @@ public class DibujaGrafo extends JPanel {
                 drag = find(w);
                 if (drag != null) {
                     off.x = (int)(w.getX() - drag.x);
-                    off.y = (int)(w.getY() - drag.y);
+                    off.y = (int)w.getY() - off.y;
                 }
             }
             @Override public void mouseDragged(MouseEvent e) {

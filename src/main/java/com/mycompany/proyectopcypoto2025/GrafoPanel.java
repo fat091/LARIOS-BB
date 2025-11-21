@@ -14,16 +14,29 @@ public class GrafoPanel extends JPanel {
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         add(sp, BorderLayout.CENTER);
 
+        // Problema inicial
         grafo.configurarProblema("filosofos");
     }
-
+    
+    // Método modificado para manejar el mapeo de nombres de menú a nombres de grafo
     public void mostrarProblema(String tipo) {
-        grafo.configurarProblema(tipo);
+        // Mapear el nombre del menú al nombre interno/limpio del grafo
+        String tipoInterno = switch (tipo) {
+            case "Clúster GPU" -> "gpu_cluster";
+            case "Cena de Filósofos" -> "filosofos";
+            case "Lectores-Escritores" -> "lectores";
+            case "Productor-Consumidor" -> "productor";
+            default -> tipo.toLowerCase().replaceAll("[ -]", "");
+        };
+        grafo.configurarProblema(tipoInterno);
     }
 
 
     // --- Wrappers para compatibilidad con código antiguo ---
     public void deadlockEjecutar() { grafo.configurarProblema("deadlock"); }
     public void deadlockEvitar()   { grafo.configurarProblema("productor"); }
+    
+    // Getter añadido para que GpuClusterPanel pueda actualizar el grafo dinámicamente
+    public DibujaGrafo getGrafo() { return grafo; }
 
 }
