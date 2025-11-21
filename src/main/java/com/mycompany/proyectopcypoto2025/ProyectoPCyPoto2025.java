@@ -1,4 +1,3 @@
-
 package com.mycompany.proyectopcypoto2025;
 import javax.swing.*; import java.awt.*; import java.awt.Component;
 public class ProyectoPCyPoto2025 extends JFrame{
@@ -21,7 +20,14 @@ public class ProyectoPCyPoto2025 extends JFrame{
         synch.add(itemSync("Barreras", SyncMode.BARRERAS));
         mb.add(synch);
         JMenu graf=new JMenu("Gráfica"); JMenuItem scroll=new JMenuItem("Scroll"); scroll.addActionListener(e->derM.setMode(MetricasPanelJFree.Mode.SCROLL)); JMenuItem carr=new JMenuItem("Carrusel"); carr.addActionListener(e->derM.setMode(MetricasPanelJFree.Mode.CARRUSEL)); JMenuItem acor=new JMenuItem("Acordeón"); acor.addActionListener(e->derM.setMode(MetricasPanelJFree.Mode.ACORDEON)); graf.add(scroll); graf.add(carr); graf.add(acor); mb.add(graf);
-        JMenu prob=new JMenu("Problemas"); prob.add(itemProb("Productor-Consumidor")); prob.add(itemProb("Cena de Filósofos")); prob.add(itemProb("Barbero Dormilón")); prob.add(itemProb("Fumadores")); prob.add(itemProb("Lectores-Escritores")); mb.add(prob);
+        JMenu prob=new JMenu("Problemas"); 
+        prob.add(itemProb("Productor-Consumidor")); 
+        prob.add(itemProb("Cena de Filósofos")); 
+        prob.add(itemProb("Barbero Dormilón")); 
+        prob.add(itemProb("Fumadores")); 
+        prob.add(itemProb("Lectores-Escritores"));
+        prob.add(itemProb("Clúster GPU")); 
+        mb.add(prob);
         JMenu dead=new JMenu("Deadlock");
         JMenuItem eje=new JMenuItem("Ejecutar");
         eje.addActionListener(e->{
@@ -46,8 +52,17 @@ public class ProyectoPCyPoto2025 extends JFrame{
         dead.add(eje); dead.add(ev); mb.add(dead);
         return mb;
     }
-    private JMenuItem itemSync(String n, SyncMode m){ JMenuItem it=new JMenuItem(n); it.addActionListener(e->izq.setSyncMode(m)); return it; }
-    private JMenuItem itemProb(String n){ JMenuItem it=new JMenuItem(n); it.addActionListener(e->izq.mostrar(n)); return it; }
+    private JMenuItem itemSync(String n, SyncMode m){ JMenuItem it=new JMenuItem(n); 
+        it.addActionListener(e->izq.setSyncMode(m)); // Solo actualiza el modo en el panel activo
+        return it; 
+    }
+    private JMenuItem itemProb(String n){ JMenuItem it=new JMenuItem(n); 
+        it.addActionListener(e->{
+            izq.mostrar(n); // Muestra el panel de animación (izquierda)
+            derG.mostrarProblema(n); // Muestra el grafo de recursos (derecha)
+        }); 
+        return it; 
+    }
     private static JComponent wrap(String title, JComponent inner){ JPanel p=new JPanel(new BorderLayout()); JLabel lbl=new JLabel(title); lbl.setBorder(BorderFactory.createEmptyBorder(2,8,2,8)); lbl.setFont(lbl.getFont().deriveFont(Font.BOLD)); p.add(lbl,BorderLayout.NORTH); p.add(inner,BorderLayout.CENTER); return p; }
     public static void main(String[] args){ SwingUtilities.invokeLater(()->{ try{ UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }catch(Exception ignored){} new ProyectoPCyPoto2025().setVisible(true); }); }
 }

@@ -1,4 +1,3 @@
-
 package com.mycompany.proyectopcypoto2025;
 import javax.swing.*; import java.awt.*; import java.util.LinkedHashMap; import java.util.Map;
 public class PanelProblemas extends JPanel implements Reseteable, Demoable, SyncAware {
@@ -9,6 +8,7 @@ public class PanelProblemas extends JPanel implements Reseteable, Demoable, Sync
         map.put("Barbero Dormilón", new BarberoDormilonPanel());
         map.put("Fumadores", new FumadoresPanel());
         map.put("Lectores-Escritores", new LectoresEscritoresPanel());
+        map.put("Clúster GPU", new GpuClusterPanel()); 
         for(Map.Entry<String,JPanel> e: map.entrySet()) add(e.getValue(), e.getKey());
         cards.show(this,"Productor-Consumidor");
     }
@@ -16,5 +16,9 @@ public class PanelProblemas extends JPanel implements Reseteable, Demoable, Sync
     public String getCurrentKey(){ return currentKey; }
     @Override public void reset(){ for(JPanel p: map.values()) if(p instanceof Reseteable r) r.reset(); }
     @Override public void demo(){ for(JPanel p: map.values()) if(p instanceof Demoable d) d.demo(); }
-    @Override public void setSyncMode(SyncMode m){ for(JPanel p: map.values()) if(p instanceof SyncAware s) s.setSyncMode(m); }
+    @Override public void setSyncMode(SyncMode m){ 
+        // Solo establece el modo en el panel actualmente visible
+        JPanel currentPanel = map.get(currentKey);
+        if(currentPanel instanceof SyncAware s) s.setSyncMode(m);
+    }
 }
