@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
 import java.util.*;
+import java.util.List;
 
 public class DibujaGrafo extends JPanel {
 
@@ -33,15 +34,18 @@ public class DibujaGrafo extends JPanel {
     public void configurarProblema(String tipo) {
         nodos.clear(); aristas.clear(); by.clear(); repaint();
 
-        switch (tipo.toLowerCase()) {
-            case "productor" -> {
+        if (animTimer != null && animTimer.isRunning()) animTimer.stop();
+
+        String tipoLimpio = tipo.toLowerCase().replace("á", "a").replace("-", " ").replace("ñ", "n").trim();
+
+        switch (tipoLimpio) {
+            case "productor-consumidor", "productor consumidor", "productor" -> {
                 baseProductorConsumidor();
                 animarSecuencia(java.util.Arrays.asList(
-                        new String[]{"P0","R1"},
-                        new String[]{"R1","P1"}
+                        new String[]{"P0","R1"}, new String[]{"R1","P1"}
                 ), false);
             }
-            case "filosofos" -> {
+            case "cena de filósofos", "filosofos" -> {
                 baseFilosofos();
                 animarSecuencia(java.util.Arrays.asList(
                         new String[]{"P0","R0"}, new String[]{"P0","R1"},
@@ -51,21 +55,35 @@ public class DibujaGrafo extends JPanel {
                         new String[]{"P4","R4"}, new String[]{"P4","R0"}
                 ), false);
             }
-            case "lectores" -> {
-                baseLectoresEscritores();
+            case "barbero dormilón", "barberodormilon" -> {
+                baseBarberoDormilon();
                 animarSecuencia(java.util.Arrays.asList(
-                        new String[]{"L1","DB"},
-                        new String[]{"L2","DB"},
-                        new String[]{"E1","DB"}
+                        new String[]{"B","S"}, new String[]{"S","B"}, 
+                        new String[]{"C1","E"}, new String[]{"C2","E"} 
                 ), false);
             }
-            case "banco" -> {
-                baseBanco();
+            case "fumadores" -> { 
+                baseFumadores();
                 animarSecuencia(java.util.Arrays.asList(
-                        new String[]{"C1","R1"}, new String[]{"R1","C2"},
-                        new String[]{"C2","R2"}, new String[]{"R2","C3"},
-                        new String[]{"C3","R3"}, new String[]{"R3","C1"}
-                ), true);
+                        new String[]{"A","R1"}, new String[]{"A","R2"}, 
+                        new String[]{"F3","R1"}, new String[]{"F3","R2"} 
+                ), false);
+            }
+            case "lectores-escritores", "lectores escritores" -> {
+                baseLectoresEscritores();
+                animarSecuencia(java.util.Arrays.asList(
+                        new String[]{"L1","DB"}, new String[]{"L2","DB"}, new String[]{"E1","DB"}
+                ), false);
+            }
+            case "gpu_cluster", "clúster gpu" -> { 
+                baseGpuCluster();
+                animarSecuencia(java.util.Arrays.asList(
+                        new String[]{"J1","I0"}, 
+                        new String[]{"J1","G"},  
+                        new String[]{"I0","J1"}, 
+                        new String[]{"G","J1"},  
+                        new String[]{"J1","K"}   
+                ), false);
             }
             case "deadlock" -> {
                 baseDeadlockGeneral();
@@ -86,7 +104,7 @@ public class DibujaGrafo extends JPanel {
 
     private void baseProductorConsumidor() {
         addN("P0", 300, 200, Nodo.Tipo.PROCESO, new Color(255,180,180));
-        addN("R1", 500, 200, Nodo.Tipo.RECURSO, new Color(180,220,255));
+        addN("R1", 500, 200, Nodo.Tipo.RECURSO, new Color(180,220,255)); 
         addN("P1", 700, 200, Nodo.Tipo.PROCESO, new Color(200,255,200));
     }
 
@@ -104,20 +122,29 @@ public class DibujaGrafo extends JPanel {
         }
     }
 
+    private void baseBarberoDormilon() {
+        addN("B", 100, 200, Nodo.Tipo.PROCESO, new Color(150, 150, 255)); 
+        addN("C1", 400, 100, Nodo.Tipo.PROCESO, new Color(255, 180, 180)); 
+        addN("C2", 400, 300, Nodo.Tipo.PROCESO, new Color(255, 180, 180)); 
+        addN("S", 250, 200, Nodo.Tipo.RECURSO, new Color(180, 220, 255)); 
+        addN("E", 550, 200, Nodo.Tipo.RECURSO, new Color(200, 255, 200)); 
+    }
+    
+    private void baseFumadores() { 
+        addN("A", 100, 250, Nodo.Tipo.PROCESO, new Color(200, 150, 255)); 
+        addN("F1", 700, 100, Nodo.Tipo.PROCESO, new Color(255, 150, 150)); 
+        addN("F2", 700, 250, Nodo.Tipo.PROCESO, new Color(150, 255, 150)); 
+        addN("F3", 700, 400, Nodo.Tipo.PROCESO, new Color(150, 150, 255)); 
+        addN("R1", 300, 150, Nodo.Tipo.RECURSO, new Color(255, 240, 180)); 
+        addN("R2", 300, 350, Nodo.Tipo.RECURSO, new Color(180, 200, 255)); 
+    }
+
+
     private void baseLectoresEscritores() {
         addN("L1", 300, 150, Nodo.Tipo.PROCESO, new Color(180,255,180));
         addN("L2", 300, 300, Nodo.Tipo.PROCESO, new Color(180,255,180));
         addN("E1", 300, 450, Nodo.Tipo.PROCESO, new Color(255,200,180));
         addN("DB", 550, 300, Nodo.Tipo.RECURSO, new Color(180,200,255));
-    }
-
-    private void baseBanco() {
-        addN("C1", 400, 100, Nodo.Tipo.PROCESO, new Color(255,220,200));
-        addN("C2", 700, 200, Nodo.Tipo.PROCESO, new Color(255,220,200));
-        addN("C3", 400, 300, Nodo.Tipo.PROCESO, new Color(255,220,200));
-        addN("R1", 550, 100, Nodo.Tipo.RECURSO, new Color(180,200,255));
-        addN("R2", 750, 250, Nodo.Tipo.RECURSO, new Color(180,200,255));
-        addN("R3", 550, 350, Nodo.Tipo.RECURSO, new Color(180,200,255));
     }
 
     private void baseDeadlockGeneral() {
@@ -129,20 +156,51 @@ public class DibujaGrafo extends JPanel {
         addN("R3", 420, 280, Nodo.Tipo.RECURSO, new Color(160,190,255));
     }
 
+    private void baseGpuCluster() {
+        // Un Job representativo para la animación secuencial
+        addN("J1", 100, 200, Nodo.Tipo.PROCESO, new Color(255, 150, 150)); 
+        
+        // Recursos Globales
+        addN("G", 550, 200, Nodo.Tipo.RECURSO, new Color(200,180,255)); // Tokens Globales
+        addN("K", 700, 200, Nodo.Tipo.RECURSO, new Color(255,200,200)); // Ventanas Colectivas (K)
+
+        // Islas (Recursos de afinidad fuerte)
+        addN("I0", 300, 100, Nodo.Tipo.RECURSO, new Color(180,220,255)); 
+        addN("I1", 300, 200, Nodo.Tipo.RECURSO, new Color(180,220,255)); 
+        addN("I2", 300, 300, Nodo.Tipo.RECURSO, new Color(180,220,255)); 
+
+        // NOTA: Conexiones de recursos base se añaden en animarSecuencia
+    }
+
+
     /* =================== Animación =================== */
     private void animarSecuencia(java.util.List<String[]> conexiones, boolean deadlockMode) {
-        aristas.clear(); pasos.clear(); deadlock = deadlockMode; repaint();
-
+        aristas.clear(); 
+        pasos.clear(); 
+        deadlock = deadlockMode;
+        
+        // 1. Añadir las aristas base estructurales (solo para el Clúster GPU)
+        if (by.containsKey("I0") && by.containsKey("G")) {
+            pasos.add(new Conexion(by.get("I0"), by.get("G")));
+            pasos.add(new Conexion(by.get("I1"), by.get("G")));
+            pasos.add(new Conexion(by.get("I2"), by.get("G")));
+        }
+        
+        // 2. Añadir la secuencia de animación del Job
         for (String[] par : conexiones) {
             Nodo na = by.get(par[0]), nb = by.get(par[1]);
-            if (na != null && nb != null) pasos.add(new Conexion(na, nb));
+            if (na != null && nb != null) {
+                pasos.add(new Conexion(na, nb));
+            }
         }
 
         pasoActual = 0;
         if (animTimer != null && animTimer.isRunning()) animTimer.stop();
 
+        // El timer transfiere los pasos de uno en uno a la lista 'aristas'
         animTimer = new javax.swing.Timer(700, e -> {
             if (pasoActual < pasos.size()) {
+                // Añadimos la siguiente arista al grafo y repintamos
                 aristas.add(pasos.get(pasoActual));
                 pasoActual++;
                 repaint();
@@ -153,7 +211,7 @@ public class DibujaGrafo extends JPanel {
         animTimer.start();
     }
 
-    /* =================== Interacción =================== */
+    /* =================== Interacción y Pintado =================== */
     private void inicializarControles() {
         MouseAdapter ma = new MouseAdapter() {
             Point last;
@@ -206,7 +264,6 @@ public class DibujaGrafo extends JPanel {
         return null;
     }
 
-    /* =================== Pintado =================== */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
