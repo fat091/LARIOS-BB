@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-// Contenido de PlanificadorGPU.java (NUEVO - EL MONITOR)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
 package com.mycompany.proyectopcypoto2025;
 
 import java.util.*;
@@ -14,12 +10,7 @@ public class PlanificadorGPU {
     private int tokensGlobal;
     private final Map<Integer, Integer> tokensIsla; // por isla
     private int ventanasLibres;
-    
-<<<<<<< HEAD
-    // Colas de espera
-=======
-    // Colas de espera (Objetivo 5: Evitar inanición/Aging)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+
     private final Queue<Job> colaAlta = new ConcurrentLinkedQueue<>();
     private final Queue<Job> colaNormal = new ConcurrentLinkedQueue<>();
     
@@ -44,11 +35,12 @@ public class PlanificadorGPU {
     }
 
     // --- Funciones de Utilidad y Auxiliares ---
-<<<<<<< HEAD
+
+    /**
+     * Verifica si hay suficientes recursos (GPUs, Tokens de Isla, Tokens Globales)
+     * disponibles en alguna isla para asignar el trabajo J.
+     */
     private boolean puedeAsignar(Job J) { 
-=======
-    private boolean puedeAsignar(Job J) { // (Objetivo 1: Asignación atómica)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
         for (Map.Entry<Integer, Integer> entry : gpuLibres.entrySet()) {
             int i = entry.getKey();
             if (entry.getValue() >= J.g && tokensIsla.get(i) >= J.b && tokensGlobal >= J.b) {
@@ -59,10 +51,6 @@ public class PlanificadorGPU {
     }
     
     private int islaElegida(Job J) {
-<<<<<<< HEAD
-=======
-        // Política de ejemplo: elige la isla al azar entre las válidas
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
         List<Integer> islasAdmisibles = new ArrayList<>();
         for (Map.Entry<Integer, Integer> entry : gpuLibres.entrySet()) {
             int i = entry.getKey();
@@ -74,24 +62,22 @@ public class PlanificadorGPU {
         return islasAdmisibles.get(ThreadLocalRandom.current().nextInt(islasAdmisibles.size()));
     }
     
-<<<<<<< HEAD
+    /**
+     * Devuelve el trabajo con mayor prioridad y más tiempo esperando.
+     */
     private Job topeCola() { 
-=======
-    private Job topeCola() { // (Objetivo 5: Fairness/Aging)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
         if (!colaAlta.isEmpty()) return colaAlta.peek();
         return colaNormal.peek();
     }
     
     // --- Lógica del Monitor ---
     
-<<<<<<< HEAD
-    public void solicitarGang(Job J) throws InterruptedException {
-=======
-    // 1. Asignación Gang (Objetivo 1 y 5)
+    /**
+     * 1. Asignación Gang (Objetivo 1 y 5)
+     * Espera hasta que el trabajo sea el tope de la cola y los recursos estén disponibles.
+     */
     public void solicitarGang(Job J) throws InterruptedException {
         // Añadir a la cola y esperar a ser el tope Y que haya recursos
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
         (J.prioridadAlta ? colaAlta : colaNormal).offer(J);
         
         synchronized (cvAsignacion) {
@@ -111,13 +97,10 @@ public class PlanificadorGPU {
                         (J.prioridadAlta ? colaAlta : colaNormal).remove(J);
                         J.islaAsignada = i;
                         J.estado = Job.Estado.RUN;
-<<<<<<< HEAD
-                        
-=======
+
                         System.out.printf("[%s] Asignado en Isla %d.\n", J.id, i);
                         
                         // Notificar a otros que podrían ser el nuevo tope
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
                         cvAsignacion.notifyAll();
                         return;
                     }
@@ -127,39 +110,16 @@ public class PlanificadorGPU {
         }
     }
     
-<<<<<<< HEAD
-=======
-    // 2. Barrera por trabajo (Objetivo 2, 4 y 6)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+    /**
+     * 2. Barrera por trabajo (Objetivo 2, 4 y 6)
+     * Sincroniza todas las réplicas y verifica los puntos seguros (preempción/fallos).
+     */
     public void entrarBarrera(Job J) throws InterruptedException {
         synchronized (cvBarrera) {
             J.estado = Job.Estado.BARRIER;
             int replicasEnBarrera = J.replicasEnBarrera.incrementAndGet();
             
             if (replicasEnBarrera == J.g) { // Ultima réplica llegó (Punto Seguro)
-<<<<<<< HEAD
-                boolean debePreemptarse = preemptTargets.contains(J);
-                
-                if (debePreemptarse || J.fallosReportados.get() > J.maxFallos) { 
-                    preemptTargets.remove(J);
-                    liberarRecursos(J);
-                    J.replicasEnBarrera.set(0); 
-                    J.estado = Job.Estado.PREEMPTED;
-                    cvBarrera.notifyAll(); 
-                    throw new InterruptedException("Preemptado/Abortado.");
-                } else if (J.fallosReportados.get() > 0) {
-                    // Re-shard
-                    J.replicasEnBarrera.set(0); 
-                    J.fallosReportados.set(0); 
-                }
-                
-                J.replicasEnBarrera.set(0); 
-                J.estado = Job.Estado.RUN; 
-                cvBarrera.notifyAll(); 
-            } else {
-                cvBarrera.wait(); 
-=======
-                // Objetivo 4: Preempción segura y Objetivo 6: Tolerancia a fallos
                 boolean debePreemptarse = preemptTargets.contains(J);
                 
                 if (debePreemptarse || J.fallosReportados.get() > J.maxFallos) { 
@@ -167,48 +127,36 @@ public class PlanificadorGPU {
                     preemptTargets.remove(J);
                     liberarRecursos(J);
                     J.replicasEnBarrera.set(0); 
-                    J.estado = Job.Estado.PREEMPTED; // O ABORTED
-                    System.out.printf("[%s] PREEMPTED/ABORTED en barrera.\n", J.id);
+                    J.estado = Job.Estado.PREEMPTED;
                     cvBarrera.notifyAll(); // Despertar a sus pares para que lancen InterruptedException
                     throw new InterruptedException("Preemptado/Abortado.");
                 } else if (J.fallosReportados.get() > 0) {
-                    // Objetivo 6: Re-shard (reconfiguración)
-                    int g_viejo = J.g;
-                    // En un caso real: aquí se recalcula g(J) y se reasignan recursos
-                    // Simulamos que el trabajo sigue con menos réplicas.
-                    J.replicasEnBarrera.set(0); // resetear contador
-                    J.fallosReportados.set(0); // resetear fallos
-                    System.out.printf("[%s] RE-SHARD exitoso. Continúa.\n", J.id);
+                    // Re-shard (reconfiguración)
+                    // (Lógica de re-shard simulada)
+                    J.replicasEnBarrera.set(0); 
+                    J.fallosReportados.set(0); 
                 }
                 
-                J.replicasEnBarrera.set(0); // resetear para el próximo ciclo
+                J.replicasEnBarrera.set(0); 
                 J.estado = Job.Estado.RUN; 
                 cvBarrera.notifyAll(); // Despertar a todas las réplicas para que continúen
             } else {
                 cvBarrera.wait(); // Esperar a sus pares
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
             }
         }
     }
 
-<<<<<<< HEAD
-    public void solicitarVentanaColectiva(Job J) throws InterruptedException {
-        synchronized (cvVentanas) {
-            while (ventanasLibres <= 0) { 
-=======
-    // 3. Control de Ventana y Tokens (Objetivo 3)
+    /**
+     * 3. Control de Ventana y Tokens (Objetivo 3)
+     * Espera por un slot de ventana (K) Y tokens (Global e Isla).
+     */
     public void solicitarVentanaColectiva(Job J) throws InterruptedException {
         synchronized (cvVentanas) {
             while (ventanasLibres <= 0) { // Esperar por slot de ventana (K slots)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
                 cvVentanas.wait();
             }
             
             synchronized (cvTokens) {
-<<<<<<< HEAD
-=======
-                // Verificar tokens globales y de isla
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
                 while (!(tokensGlobal >= J.b && tokensIsla.get(J.islaAsignada) >= J.b)) { 
                     cvTokens.wait();
                 }
@@ -232,30 +180,25 @@ public class PlanificadorGPU {
                 tokensIsla.put(J.islaAsignada, tokensIsla.get(J.islaAsignada) + J.b);
                 J.estado = Job.Estado.RUN;
                 
-<<<<<<< HEAD
-=======
-                // Despertar a otros en espera (Objetivo 3)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+                // Despertar a otros en espera
                 cvVentanas.notifyAll();
                 cvTokens.notifyAll();
             }
         }
     }
     
-<<<<<<< HEAD
-=======
-    // 4. Preempción y Liberación (Objetivo 4)
-    public void solicitarPreempcion(Job K) { // K es el trabajo de alta prioridad que quiere entrar
-        // Objetivo 4: Marcar el objetivo y esperar a que llegue a la barrera.
+    /**
+     * 4. Preempción (Objetivo 4)
+     * Marca un trabajo de menor prioridad para ser interrumpido en la próxima barrera.
+     */
+    public void solicitarPreempcion(Job K) { 
         synchronized (cvBarrera) {
-            // Busca un trabajo RUNNING/COMM (menor prioridad) para marcar.
-            // Para simplificar, buscamos el primer trabajo no-WAIT en la cola.
+            // Lógica simplificada: encontrar un objetivo no-WAIT para marcar
             Job target = null;
             if (!colaNormal.isEmpty()) {
                 target = colaNormal.peek();
             } else if (!colaAlta.isEmpty()) {
-                // Preemptar solo si la nueva alta prioridad es mayor que la antigua
-                // (Lógica omitida, solo marcamos si encontramos un objetivo simple)
+                // ... (lógica compleja de prioridad)
             }
             
             if (target != null && target.estado != Job.Estado.WAIT) {
@@ -265,32 +208,24 @@ public class PlanificadorGPU {
         }
     }
     
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+    /**
+     * Libera todos los recursos asignados por el Gang Scheduling.
+     */
     public void liberarRecursos(Job J) {
         if (J.islaAsignada == -1) return; 
         
         synchronized (cvAsignacion) {
-<<<<<<< HEAD
-=======
-            // Objetivo: liberar la asignación gang y los tokens.
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+            // Liberar la asignación gang y los tokens retenidos.
             gpuLibres.put(J.islaAsignada, gpuLibres.get(J.islaAsignada) + J.g);
             tokensIsla.put(J.islaAsignada, tokensIsla.get(J.islaAsignada) + J.b);
             tokensGlobal += J.b;
             
-<<<<<<< HEAD
-=======
-            // Si el trabajo estaba esperando en cola, removerlo.
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
             colaAlta.remove(J);
             colaNormal.remove(J);
 
             J.islaAsignada = -1;
             
-<<<<<<< HEAD
-=======
-            // Despertar a trabajos esperando por Gang (Objetivo 1 y 5)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+            // Despertar a trabajos esperando por Gang
             cvAsignacion.notifyAll();
         }
         
@@ -299,11 +234,7 @@ public class PlanificadorGPU {
         }
     }
 
-<<<<<<< HEAD
     // Getters para la GUI
-=======
-    // Getters para la GUI (métricas)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
     public Map<Integer, Integer> getGpuLibres() { return gpuLibres; }
     public int getTokensGlobal() { return tokensGlobal; }
     public Map<Integer, Integer> getTokensIsla() { return tokensIsla; }

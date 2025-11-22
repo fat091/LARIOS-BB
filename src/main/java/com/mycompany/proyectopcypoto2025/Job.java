@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-// Contenido de Job.java (NUEVO)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
 package com.mycompany.proyectopcypoto2025;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,11 +11,7 @@ public class Job {
     public final boolean prioridadAlta;
     public int islaAsignada = -1;
     public Estado estado = Estado.WAIT;
-    
-<<<<<<< HEAD
-=======
-    // Conteo para la barrera (Objetivo 2) y Fallos (Objetivo 6)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+
     public AtomicInteger replicasEnBarrera = new AtomicInteger(0);
     public AtomicInteger fallosReportados = new AtomicInteger(0);
     
@@ -35,20 +27,17 @@ public class Job {
         fallosReportados.incrementAndGet();
     }
     
-<<<<<<< HEAD
+    /**
+     * Verifica si todas las réplicas requeridas han reportado la llegada a la barrera.
+     * En un contexto real, 'g' podría ajustarse tras un re-shard.
+     */
     public boolean todosReportadosEnBarrera() {
         return replicasEnBarrera.get() == g; 
     }
     
-=======
-    // Utilizado por el Monitor
-    public boolean todosReportadosEnBarrera() {
-        // En un caso real, esto usaría el tamaño actual después de un re-shard
-        return replicasEnBarrera.get() == g; 
-    }
-    
-    // El hilo líder del trabajo usa este método para verificar si debe continuar
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+    /**
+     * Indica si el trabajo está en un estado activo de ejecución o sincronización.
+     */
     public boolean estaEjecutando() {
         return estado == Estado.RUN || estado == Estado.COMM || estado == Estado.BARRIER;
     }
@@ -57,8 +46,4 @@ public class Job {
     public String toString() {
         return String.format("%s (g=%d, b=%d) [%s] @Isla%d", id, g, b, estado, islaAsignada);
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b

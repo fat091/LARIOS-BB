@@ -53,24 +53,22 @@ public class ProyectoPCyPoto2025 extends JFrame{
         return mb;
     }
     private JMenuItem itemSync(String n, SyncMode m){ JMenuItem it=new JMenuItem(n); 
-<<<<<<< HEAD
-        it.addActionListener(e->izq.setSyncMode(m));
-=======
+
         it.addActionListener(e->izq.setSyncMode(m)); // Solo actualiza el modo en el panel activo
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+
         return it; 
     }
     private JMenuItem itemProb(String n){ JMenuItem it=new JMenuItem(n); 
         it.addActionListener(e->{
-<<<<<<< HEAD
+
             izq.mostrar(n); 
             derG.mostrarProblema(n); 
             SwingUtilities.getWindowAncestor(this).revalidate(); 
             SwingUtilities.getWindowAncestor(this).repaint();
-=======
+
             izq.mostrar(n); // Muestra el panel de animación (izquierda)
             derG.mostrarProblema(n); // Muestra el grafo de recursos (derecha)
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+
         }); 
         return it; 
     }

@@ -9,11 +9,7 @@ public class Nodo {
     public final String nombre;
     public int x, y;               // centro geométrico
     public final Tipo tipo;
-<<<<<<< HEAD
-    public Color fill;             // CORREGIDO: Eliminado 'final'
-=======
-    public Color fill;             // << CORREGIDO: ELIMINAMOS 'final' >>
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+    public Color fill;              
 
     public static final int SIZE = 52;       // ancho/alto base
     public static final int R = SIZE / 2;    // radio “visual”

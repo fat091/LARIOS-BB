@@ -22,10 +22,9 @@ public class PanelProblemas extends JPanel implements Reseteable, Demoable, Sync
     @Override public void reset(){ for(JPanel p: map.values()) if(p instanceof Reseteable r) r.reset(); }
     @Override public void demo(){ for(JPanel p: map.values()) if(p instanceof Demoable d) d.demo(); }
     @Override public void setSyncMode(SyncMode m){ 
-<<<<<<< HEAD
-=======
+
         // Solo establece el modo en el panel actualmente visible
->>>>>>> 23e934d68df5d3d253bd9fa0253db12338618c8b
+
         JPanel currentPanel = map.get(currentKey);
         if(currentPanel instanceof SyncAware s) s.setSyncMode(m);
     }
