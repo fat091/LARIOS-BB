@@ -159,31 +159,35 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         
         int W = getWidth(), H = getHeight();
         
-        // Fondo con gradiente
-        GradientPaint bgGrad = new GradientPaint(0, 0, new Color(20, 20, 40),
-                0, H, new Color(40, 20, 60));
+        // Fondo oscuro estilo data center
+        GradientPaint bgGrad = new GradientPaint(0, 0, new Color(15, 15, 30),
+                0, H, new Color(25, 15, 35));
         g2.setPaint(bgGrad);
         g2.fillRect(0, 0, W, H);
         
         // Dibujar partículas de fondo
         dibujarParticulasFondo(g2, W, H);
         
-        int islandHeight = (H - 120) / NUM_ISLAS;
+        // Calcular layout: 60% izquierda para islas, 40% derecha para colas
+        int leftWidth = (int)(W * 0.60);
+        int rightWidth = W - leftWidth;
         
-        // Dibujar Islas GPU con mejores efectos
+        int islandHeight = (H - 100) / NUM_ISLAS;
+        
+        // Dibujar Islas GPU (lado izquierdo)
         for (int i = 0; i < NUM_ISLAS; i++) {
-            int y = 60 + i * islandHeight;
-            dibujarIsla(g2, i, 40, y, W - 280, islandHeight - 20);
+            int y = 50 + i * islandHeight;
+            dibujarIsla(g2, i, 20, y, leftWidth - 40, islandHeight - 15);
         }
         
-        // Panel lateral para trabajos en cola
-        dibujarPanelColas(g2, W - 230, 60, 220, H - 140);
+        // Panel lateral para colas (lado derecho)
+        dibujarPanelColas(g2, leftWidth + 10, 50, rightWidth - 30, H - 100);
         
         // Dibujar Estado Global en la parte inferior
-        dibujarEstadoGlobal(g2, W / 2, H - 30);
+        dibujarEstadoGlobal(g2, leftWidth / 2, H - 25);
 
-        // Info del modo en la esquina
-        dibujarInfoModo(g2, W, H);
+        // Info del modo en la esquina superior derecha
+        dibujarInfoModo(g2, W, 20);
         
         g2.dispose();
     }
@@ -200,53 +204,58 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
     }
     
     private void dibujarIsla(Graphics2D g2, int id, int x, int y, int w, int h) {
-        // Sombra
-        g2.setColor(new Color(0, 0, 0, 80));
-        g2.fillRoundRect(x + 4, y + 4, w, h, 20, 20);
+        // Sombra profunda
+        g2.setColor(new Color(0, 0, 0, 100));
+        g2.fillRoundRect(x + 5, y + 5, w, h, 15, 15);
         
-        // Fondo de isla con gradiente
-        GradientPaint islandGrad = new GradientPaint(x, y, new Color(45, 45, 90),
-                x, y + h, new Color(30, 30, 70));
+        // Fondo de isla estilo servidor con textura
+        GradientPaint islandGrad = new GradientPaint(x, y, new Color(35, 35, 55),
+                x, y + h, new Color(20, 20, 35));
         g2.setPaint(islandGrad);
-        g2.fillRoundRect(x, y, w, h, 20, 20);
+        g2.fillRoundRect(x, y, w, h, 15, 15);
         
-        // Borde brillante
-        g2.setColor(new Color(120, 120, 255, 180));
-        g2.setStroke(new BasicStroke(2.5f));
-        g2.drawRoundRect(x, y, w, h, 20, 20);
+        // Borde con efecto neón
+        g2.setColor(new Color(0, 200, 255, 200));
+        g2.setStroke(new BasicStroke(2f));
+        g2.drawRoundRect(x, y, w, h, 15, 15);
         
-        // Título de la isla
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 18f));
-        g2.setColor(new Color(200, 200, 255));
-        g2.drawString("ISLA GPU " + id, x + 15, y + 28);
+        // Título de la isla con estilo LED
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 16f));
+        g2.setColor(new Color(0, 255, 200));
+        g2.drawString("ISLA GPU " + id, x + 12, y + 22);
         
         // Estadísticas
         int gpusLibres = planificador.getGpuLibres().getOrDefault(id, 0);
+        int gpusUsados = GPUS_POR_ISLA - gpusLibres;
         int tokensLibres = planificador.getTokensIsla().getOrDefault(id, 0);
         
-        // Barra de GPUs
-        dibujarBarraRecurso(g2, x + 15, y + 40, w - 30, 18, 
-                            gpusLibres, GPUS_POR_ISLA, "GPUs", new Color(0, 255, 150));
+        // Mostrar estadísticas en formato compacto
+        g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 11f));
+        g2.setColor(new Color(180, 180, 200));
+        g2.drawString("GPUs: " + gpusUsados + "/" + GPUS_POR_ISLA, x + 12, y + 38);
         
-        // Barra de Tokens
-        dibujarBarraRecurso(g2, x + 15, y + 65, w - 30, 18,
+        // Barra de Tokens estilo LCD
+        int barY = y + 45;
+        dibujarBarraRecurso(g2, x + 12, barY, w - 24, 14,
                            tokensLibres, TOKENS_ISLA, "Tokens", new Color(255, 200, 0));
         
-        // Grid de GPUs
-        int gx = x + 15;
-        int gy = y + 95;
-        int gpuGap = Math.min(50, (w - 30) / GPUS_POR_ISLA);
+        // Grid de GPUs alineados horizontalmente
+        int gx = x + 12;
+        int gy = y + 68;
+        int availableWidth = w - 24;
+        int gpuWidth = 48;
+        int gpuGap = Math.max(4, (availableWidth - (GPUS_POR_ISLA * gpuWidth)) / (GPUS_POR_ISLA - 1));
         
         for (int i = 0; i < GPUS_POR_ISLA; i++) {
-            int currentGx = gx + i * gpuGap;
+            int currentGx = gx + i * (gpuWidth + gpuGap);
             boolean libre = i < gpusLibres;
             
             Color coreColor = libre ? new Color(0, 255, 100) : new Color(255, 50, 50);
-            dibujarGPUMejorado(g2, currentGx, gy, coreColor, libre);
+            dibujarGPUMejorado(g2, currentGx, gy, coreColor, libre, gpuWidth);
         }
         
-        // Dibujar trabajos asignados a esta isla
-        dibujarTrabajosEnIsla(g2, id, x, y, w, h);
+        // Dibujar trabajos asignados a esta isla (debajo de los GPUs)
+        dibujarTrabajosEnIsla(g2, id, x, gy + 65, w, h - (gy + 65 - y));
     }
     
     private void dibujarBarraRecurso(Graphics2D g2, int x, int y, int w, int h,
@@ -257,72 +266,116 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         
         // Progreso
         float ratio = (float) valor / maximo;
-        int barW = (int) (w * ratio);
+        int barW = Math.max(0, Math.min(w, (int) (w * ratio)));
         
-        GradientPaint barGrad = new GradientPaint(x, y, color.brighter(),
-                x + barW, y, color);
-        g2.setPaint(barGrad);
-        g2.fillRoundRect(x, y, barW, h, 8, 8);
+        if (barW > 0) {
+            GradientPaint barGrad = new GradientPaint(x, y, color.brighter(),
+                    x + barW, y, color);
+            g2.setPaint(barGrad);
+            g2.fillRoundRect(x, y, barW, h, 8, 8);
+        }
         
         // Borde
         g2.setColor(new Color(100, 100, 150));
         g2.setStroke(new BasicStroke(1.5f));
         g2.drawRoundRect(x, y, w, h, 8, 8);
         
-        // Texto
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 11f));
+        // Texto con recorte para que no se salga
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
         g2.setColor(Color.WHITE);
         String text = label + ": " + valor + "/" + maximo;
         FontMetrics fm = g2.getFontMetrics();
-        g2.drawString(text, x + (w - fm.stringWidth(text)) / 2, y + h - 4);
+        int textWidth = fm.stringWidth(text);
+        
+        // Si el texto es más ancho que la barra, centrarlo
+        int textX = x + Math.max(2, (w - textWidth) / 2);
+        int textY = y + (h + fm.getAscent()) / 2 - 2;
+        
+        // Crear clip para que el texto no se salga
+        Shape oldClip = g2.getClip();
+        g2.setClip(x, y, w, h);
+        g2.drawString(text, textX, textY);
+        g2.setClip(oldClip);
     }
     
-    private void dibujarGPUMejorado(Graphics2D g2, int x, int y, Color coreColor, boolean activo) {
-        int w = 42, h = 50;
+    private void dibujarGPUMejorado(Graphics2D g2, int x, int y, Color coreColor, boolean activo, int w) {
+        int h = 55;
         
-        // Sombra
-        g2.setColor(new Color(0, 0, 0, 60));
+        // Sombra del GPU
+        g2.setColor(new Color(0, 0, 0, 80));
         g2.fillRoundRect(x + 2, y + 2, w, h, 8, 8);
         
-        // Cuerpo del GPU
-        GradientPaint gpuGrad = new GradientPaint(x, y, new Color(60, 60, 80),
-                x, y + h, new Color(40, 40, 60));
+        // Cuerpo del GPU con textura metálica
+        GradientPaint gpuGrad = new GradientPaint(x, y, new Color(50, 50, 65),
+                x, y + h, new Color(30, 30, 45));
         g2.setPaint(gpuGrad);
         g2.fillRoundRect(x, y, w, h, 8, 8);
         
-        // Core central animado
-        int coreSize = 18;
+        // Líneas decorativas superiores (ventilación)
+        g2.setColor(new Color(20, 20, 30));
+        for (int i = 0; i < 3; i++) {
+            g2.fillRect(x + 4, y + 4 + i * 3, w - 8, 2);
+        }
+        
+        // Core central con efecto de brillo
+        int coreSize = 20;
         int coreX = x + (w - coreSize) / 2;
-        int coreY = y + 8;
+        int coreY = y + 15;
         
         if (activo) {
-            // Pulso de luz
-            float pulse = (float) (Math.sin(frameCount * 0.1) * 0.3 + 0.7);
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulse * 0.4f));
+            // Halo de luz pulsante
+            float pulse = (float) (Math.sin(frameCount * 0.15) * 0.4 + 0.6);
+            
+            // Halo exterior
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulse * 0.3f));
             g2.setColor(coreColor);
-            g2.fillOval(coreX - 4, coreY - 4, coreSize + 8, coreSize + 8);
+            g2.fillOval(coreX - 6, coreY - 6, coreSize + 12, coreSize + 12);
+            
+            // Halo medio
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulse * 0.5f));
+            g2.fillOval(coreX - 3, coreY - 3, coreSize + 6, coreSize + 6);
+            
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
         }
         
-        g2.setColor(coreColor);
+        // Core principal con gradiente radial
+        RadialGradientPaint coreGrad = new RadialGradientPaint(
+            coreX + coreSize/2f, coreY + coreSize/2f, coreSize/2f,
+            new float[]{0.0f, 0.7f, 1.0f},
+            new Color[]{coreColor.brighter(), coreColor, coreColor.darker()}
+        );
+        g2.setPaint(coreGrad);
         g2.fillOval(coreX, coreY, coreSize, coreSize);
         
-        // Detalles del chip
-        g2.setColor(new Color(80, 80, 100));
+        // Borde del core
+        g2.setColor(coreColor.darker());
         g2.setStroke(new BasicStroke(1.5f));
+        g2.drawOval(coreX, coreY, coreSize, coreSize);
+        
+        // Líneas de datos (decorativas)
+        g2.setColor(new Color(60, 60, 80));
+        g2.setStroke(new BasicStroke(1.2f));
         for (int i = 0; i < 3; i++) {
-            int barY = y + 30 + i * 6;
-            g2.drawLine(x + 8, barY, x + w - 8, barY);
+            int lineY = y + 40 + i * 4;
+            g2.drawLine(x + 6, lineY, x + w - 6, lineY);
         }
         
-        // Borde
-        g2.setColor(activo ? coreColor.darker() : new Color(80, 80, 80));
+        // Borde del GPU
+        g2.setColor(activo ? coreColor.darker() : new Color(60, 60, 70));
         g2.setStroke(new BasicStroke(2f));
         g2.drawRoundRect(x, y, w, h, 8, 8);
         
-        // LED indicador
-        g2.setColor(activo ? Color.GREEN : Color.RED);
-        g2.fillOval(x + w - 8, y + 4, 4, 4);
+        // LED indicador en la esquina superior
+        int ledSize = 5;
+        g2.setColor(activo ? new Color(0, 255, 100) : new Color(255, 50, 50));
+        g2.fillOval(x + w - ledSize - 4, y + 4, ledSize, ledSize);
+        
+        // Brillo del LED
+        if (activo) {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+            g2.fillOval(x + w - ledSize - 5, y + 3, ledSize + 2, ledSize + 2);
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+        }
     }
     
     private void dibujarTrabajosEnIsla(Graphics2D g2, int islaId, int ix, int iy, int iw, int ih) {
@@ -333,131 +386,227 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             }
         }
         
-        int jobX = ix + iw - 180;
-        int jobY = iy + 95;
+        if (jobsEnIsla.isEmpty()) return;
         
-        for (int i = 0; i < jobsEnIsla.size() && i < 3; i++) {
+        int jobX = ix + 10;
+        int jobY = iy;
+        int maxJobsToShow = Math.min(3, jobsEnIsla.size());
+        int jobSpacing = 3;
+        
+        for (int i = 0; i < maxJobsToShow; i++) {
             Job j = jobsEnIsla.get(i);
-            dibujarTarjetaTrabajo(g2, jobX, jobY + i * 45, 160, 40, j);
+            dibujarTarjetaTrabajo(g2, jobX, jobY + i * (28 + jobSpacing), iw - 20, 25, j);
+        }
+        
+        // Si hay más trabajos, mostrar indicador
+        if (jobsEnIsla.size() > maxJobsToShow) {
+            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
+            g2.setColor(new Color(150, 150, 200));
+            g2.drawString("+" + (jobsEnIsla.size() - maxJobsToShow) + " más...", 
+                         jobX + 5, jobY + maxJobsToShow * (28 + jobSpacing) + 15);
         }
     }
     
     private void dibujarTarjetaTrabajo(Graphics2D g2, int x, int y, int w, int h, Job job) {
-        // Fondo de tarjeta
+        // Color según estado con esquema más oscuro
         Color cardColor = switch (job.estado) {
-            case RUN -> new Color(40, 100, 40);
-            case BARRIER -> new Color(100, 100, 40);
-            case COMM -> new Color(100, 40, 100);
+            case RUN -> new Color(0, 120, 80);
+            case BARRIER -> new Color(180, 140, 0);
+            case COMM -> new Color(140, 0, 140);
             default -> new Color(60, 60, 60);
         };
         
-        GradientPaint cardGrad = new GradientPaint(x, y, cardColor.brighter(),
-                x, y + h, cardColor);
-        g2.setPaint(cardGrad);
-        g2.fillRoundRect(x, y, w, h, 12, 12);
+        // Sombra
+        g2.setColor(new Color(0, 0, 0, 100));
+        g2.fillRoundRect(x + 2, y + 2, w, h, 8, 8);
         
-        // Borde
+        // Fondo de tarjeta
+        g2.setColor(cardColor.darker());
+        g2.fillRoundRect(x, y, w, h, 8, 8);
+        
+        // Borde con brillo
         g2.setColor(cardColor.brighter());
-        g2.setStroke(new BasicStroke(2f));
-        g2.drawRoundRect(x, y, w, h, 12, 12);
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawRoundRect(x, y, w, h, 8, 8);
         
-        // ID del trabajo
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 14f));
+        // Crear clip para evitar que el contenido se salga
+        Shape oldClip = g2.getClip();
+        g2.setClip(x, y, w, h);
+        
+        // ID del trabajo - más pequeño y compacto
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 11f));
         g2.setColor(Color.WHITE);
-        g2.drawString(job.id, x + 8, y + 18);
+        g2.drawString(job.id, x + 6, y + 13);
         
-        // Estado
-        g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 10f));
+        // Estado - abreviado
+        g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 9f));
         g2.setColor(new Color(200, 200, 200));
-        String estadoStr = job.estado.name();
-        g2.drawString(estadoStr, x + 8, y + 32);
+        String estadoAbr = switch(job.estado) {
+            case RUN -> "RUN";
+            case BARRIER -> "BAR";
+            case COMM -> "COM";
+            default -> "???";
+        };
+        g2.drawString(estadoAbr, x + 6, y + h - 5);
         
-        // Indicador de GPUs
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
-        g2.drawString("G:" + job.g, x + w - 50, y + 18);
-        g2.drawString("B:" + job.b, x + w - 50, y + 32);
+        // Recursos en el lado derecho
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 9f));
+        g2.setColor(new Color(150, 255, 150));
+        g2.drawString("G:" + job.g, x + w - 45, y + 13);
+        g2.setColor(new Color(255, 200, 100));
+        g2.drawString("B:" + job.b, x + w - 45, y + h - 5);
         
-        // Barra de progreso simulada
+        // Mini barra de progreso
         if (job.estado == Job.Estado.RUN || job.estado == Job.Estado.COMM) {
-            float progress = ((frameCount + job.id.hashCode()) % 100) / 100f;
-            int barW = (int) ((w - 16) * progress);
+            float progress = ((frameCount * 2 + job.id.hashCode()) % 200) / 200f;
+            int maxBarW = w - 55;
+            int barW = Math.max(0, Math.min(maxBarW, (int) (maxBarW * progress)));
             
-            g2.setColor(new Color(0, 200, 255, 150));
-            g2.fillRoundRect(x + 8, y + h - 8, barW, 4, 2, 2);
+            g2.setColor(new Color(0, 255, 200, 180));
+            g2.fillRoundRect(x + 40, y + h - 8, barW, 3, 2, 2);
         }
+        
+        // Restaurar clip
+        g2.setClip(oldClip);
     }
     
     private void dibujarPanelColas(Graphics2D g2, int x, int y, int w, int h) {
-        // Fondo del panel
-        g2.setColor(new Color(30, 30, 50, 200));
-        g2.fillRoundRect(x, y, w, h, 15, 15);
+        // Fondo del panel oscuro
+        g2.setColor(new Color(25, 25, 40, 220));
+        g2.fillRoundRect(x, y, w, h, 12, 12);
         
-        g2.setColor(new Color(100, 100, 200));
+        g2.setColor(new Color(0, 150, 255));
         g2.setStroke(new BasicStroke(2f));
-        g2.drawRoundRect(x, y, w, h, 15, 15);
+        g2.drawRoundRect(x, y, w, h, 12, 12);
         
-        // Título
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 16f));
-        g2.setColor(new Color(200, 200, 255));
-        g2.drawString("COLAS", x + 10, y + 25);
+        // Título principal
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 15f));
+        g2.setColor(new Color(0, 200, 255));
+        g2.drawString("COLAS DE TRABAJOS", x + 10, y + 22);
+        
+        // Línea separadora
+        g2.setColor(new Color(100, 100, 150, 100));
+        g2.setStroke(new BasicStroke(1f));
+        g2.drawLine(x + 10, y + 28, x + w - 10, y + 28);
+        
+        int qY = y + 40;
         
         // Cola de alta prioridad
-        int qY = y + 40;
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12f));
-        g2.setColor(new Color(255, 200, 100));
-        g2.drawString("Alta Prioridad:", x + 10, qY);
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 13f));
+        g2.setColor(new Color(255, 180, 0));
+        g2.drawString("⚡ Alta Prioridad", x + 10, qY);
         
-        qY += 20;
+        g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 10f));
+        g2.setColor(new Color(200, 160, 100));
+        int colaAltaSize = planificador.getColaAlta().size();
+        g2.drawString("(" + colaAltaSize + " en espera)", x + 130, qY);
+        
+        qY += 18;
         int index = 0;
         for (Job j : planificador.getColaAlta()) {
-            if (index >= 5) break;
+            if (index >= 6) {
+                g2.setFont(g2.getFont().deriveFont(Font.ITALIC, 9f));
+                g2.setColor(new Color(150, 150, 180));
+                g2.drawString("+" + (colaAltaSize - 6) + " más...", x + 15, qY + 5);
+                break;
+            }
             dibujarJobEnCola(g2, x + 10, qY, w - 20, j, true);
-            qY += 35;
+            qY += 32;
             index++;
         }
         
-        // Cola normal
-        qY += 10;
-        g2.setColor(new Color(150, 200, 255));
-        g2.drawString("Normal:", x + 10, qY);
+        // Separador
+        qY += 8;
+        g2.setColor(new Color(100, 100, 150, 100));
+        g2.drawLine(x + 10, qY, x + w - 10, qY);
+        qY += 18;
         
-        qY += 20;
+        // Cola normal
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 13f));
+        g2.setColor(new Color(100, 200, 255));
+        g2.drawString("⏱ Normal", x + 10, qY);
+        
+        g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 10f));
+        g2.setColor(new Color(120, 180, 220));
+        int colaNormalSize = planificador.getColaNormal().size();
+        g2.drawString("(" + colaNormalSize + " en espera)", x + 100, qY);
+        
+        qY += 18;
         index = 0;
         for (Job j : planificador.getColaNormal()) {
-            if (index >= 5) break;
+            if (index >= 6) {
+                g2.setFont(g2.getFont().deriveFont(Font.ITALIC, 9f));
+                g2.setColor(new Color(150, 150, 180));
+                g2.drawString("+" + (colaNormalSize - 6) + " más...", x + 15, qY + 5);
+                break;
+            }
             dibujarJobEnCola(g2, x + 10, qY, w - 20, j, false);
-            qY += 35;
+            qY += 32;
             index++;
         }
     }
     
     private void dibujarJobEnCola(Graphics2D g2, int x, int y, int w, Job job, boolean alta) {
-        Color bgColor = alta ? new Color(80, 60, 40) : new Color(40, 60, 80);
+        Color bgColor = alta ? new Color(60, 50, 30) : new Color(30, 50, 60);
+        Color borderColor = alta ? new Color(255, 180, 0) : new Color(100, 180, 255);
         
+        // Sombra
+        g2.setColor(new Color(0, 0, 0, 80));
+        g2.fillRoundRect(x + 2, y + 2, w, 26, 6, 6);
+        
+        // Fondo
         g2.setColor(bgColor);
-        g2.fillRoundRect(x, y, w, 28, 8, 8);
+        g2.fillRoundRect(x, y, w, 26, 6, 6);
         
-        g2.setColor(alta ? new Color(255, 200, 100) : new Color(150, 200, 255));
-        g2.setStroke(new BasicStroke(1.5f));
-        g2.drawRoundRect(x, y, w, 28, 8, 8);
+        // Borde animado para indicar espera
+        float dashPhase = (frameCount * 0.5f) % 10;
+        g2.setColor(borderColor);
+        g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 
+                                     10.0f, new float[]{5, 5}, dashPhase));
+        g2.drawRoundRect(x, y, w, 26, 6, 6);
         
+        // Crear clip para evitar desbordamiento
+        Shape oldClip = g2.getClip();
+        g2.setClip(x, y, w, 26);
+        
+        // ID del trabajo
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 11f));
         g2.setColor(Color.WHITE);
-        g2.drawString(job.id, x + 8, y + 12);
+        g2.drawString(job.id, x + 8, y + 14);
         
-        g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 9f));
-        g2.setColor(new Color(200, 200, 200));
-        g2.drawString("GPUs:" + job.g + " Tok:" + job.b, x + 8, y + 24);
-        
-        // Icono de espera animado
-        float angle = (frameCount * 0.1f) % 360;
-        g2.setColor(new Color(255, 255, 100, 150));
-        Arc2D arc = new Arc2D.Float(x + w - 20, y + 8, 12, 12, angle, 270, Arc2D.OPEN);
+        // Icono de reloj animado
+        float angle = (frameCount * 0.15f) % 360;
+        g2.setColor(new Color(255, 255, 100, 180));
+        g2.setStroke(new BasicStroke(1.5f));
+        int clockX = x + w - 30;
+        int clockY = y + 6;
+        Arc2D arc = new Arc2D.Float(clockX, clockY, 14, 14, angle, 300, Arc2D.OPEN);
         g2.draw(arc);
+        
+        // Recursos requeridos (centrados)
+        g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 9f));
+        g2.setColor(new Color(180, 180, 200));
+        String recursos = "G:" + job.g + " T:" + job.b;
+        FontMetrics fm = g2.getFontMetrics();
+        int textWidth = fm.stringWidth(recursos);
+        int textX = x + (w - textWidth - 40) / 2 + 25;
+        g2.drawString(recursos, textX, y + 14);
+        
+        // Indicador de prioridad (flecha)
+        if (alta) {
+            g2.setColor(new Color(255, 200, 0));
+            int[] xPoints = {x + w - 48, x + w - 52, x + w - 44};
+            int[] yPoints = {y + 8, y + 16, y + 16};
+            g2.fillPolygon(xPoints, yPoints, 3);
+        }
+        
+        // Restaurar clip
+        g2.setClip(oldClip);
     }
     
     private void dibujarEstadoGlobal(Graphics2D g2, int cx, int y) {
-        int w = 500, h = 50;
+        int w = Math.min(500, getWidth() - 40);
+        int h = 50;
         int x = cx - w / 2;
         
         // Fondo con sombra
@@ -473,44 +622,64 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         g2.setStroke(new BasicStroke(2f));
         g2.drawRoundRect(x, y - h / 2, w, h, 15, 15);
         
+        // Crear clip para evitar desbordamiento
+        Shape oldClip = g2.getClip();
+        g2.setClip(x, y - h / 2, w, h);
+        
+        // Calcular ancho disponible para barras
+        int barWidth = Math.min(220, (w - 30) / 2);
+        
         // Tokens globales
         int B_USED = TOKENS_GLOBAL - planificador.getTokensGlobal();
-        dibujarBarraRecurso(g2, x + 10, y - h / 2 + 8, 220, 16,
+        dibujarBarraRecurso(g2, x + 10, y - h / 2 + 8, barWidth, 16,
                            planificador.getTokensGlobal(), TOKENS_GLOBAL,
                            "Tokens Globales", new Color(0, 200, 255));
         
         // Ventanas K
         int K_USED = VENTANAS_K - planificador.getVentanasLibres();
-        dibujarBarraRecurso(g2, x + 240, y - h / 2 + 8, 120, 16,
+        dibujarBarraRecurso(g2, x + barWidth + 20, y - h / 2 + 8, Math.min(120, w - barWidth - 140), 16,
                            planificador.getVentanasLibres(), VENTANAS_K,
                            "Ventanas", new Color(255, 150, 0));
         
-        // Estadísticas de colas
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 11f));
+        // Estadísticas de colas (compacto)
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
         g2.setColor(Color.WHITE);
         int colaAlta = planificador.getColaAlta().size();
         int colaNormal = planificador.getColaNormal().size();
-        g2.drawString("Cola A:" + colaAlta, x + 370, y - h / 2 + 18);
-        g2.drawString("Cola N:" + colaNormal, x + 420, y - h / 2 + 18);
+        
+        int statsX = x + barWidth + Math.min(120, w - barWidth - 140) + 30;
+        if (statsX + 80 < x + w - 10) {
+            g2.drawString("Cola A:" + colaAlta, statsX, y - h / 2 + 18);
+            g2.drawString("Cola N:" + colaNormal, statsX, y - h / 2 + 32);
+        }
+        
+        // Restaurar clip
+        g2.setClip(oldClip);
     }
     
-    private void dibujarInfoModo(Graphics2D g2, int W, int H) {
-        String modoText = "MODO: " + currentMode.toString();
+    private void dibujarInfoModo(Graphics2D g2, int W, int y) {
+        String modoText = currentMode.toString();
         
-        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 13f));
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12f));
         FontMetrics fm = g2.getFontMetrics();
-        int tw = fm.stringWidth(modoText);
+        int tw = fm.stringWidth("MODO: " + modoText);
         
-        int x = W - tw - 20;
-        int y = 25;
+        int x = W - tw - 25;
         
-        // Fondo
-        g2.setColor(new Color(0, 0, 0, 150));
-        g2.fillRoundRect(x - 8, y - 16, tw + 16, 24, 8, 8);
+        // Fondo oscuro
+        g2.setColor(new Color(20, 20, 35, 200));
+        g2.fillRoundRect(x - 10, y - 14, tw + 20, 22, 8, 8);
+        
+        // Borde
+        g2.setColor(new Color(100, 200, 255));
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawRoundRect(x - 10, y - 14, tw + 20, 22, 8, 8);
         
         // Texto
-        g2.setColor(new Color(150, 255, 150));
-        g2.drawString(modoText, x, y);
+        g2.setColor(new Color(120, 120, 140));
+        g2.drawString("MODO:", x, y);
+        g2.setColor(new Color(0, 255, 150));
+        g2.drawString(modoText, x + fm.stringWidth("MODO: "), y);
     }
 
     @Override
