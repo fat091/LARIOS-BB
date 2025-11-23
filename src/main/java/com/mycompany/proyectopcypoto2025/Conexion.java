@@ -6,16 +6,24 @@ import java.util.List;
 
 public class Conexion {
     public final Nodo a, b;
-    public String etiqueta;     // opcional
+    public String etiqueta;
 
-    public Conexion(Nodo a, Nodo b) { this.a = a; this.b = b; }
-    public void setEtiqueta(String e) { this.etiqueta = e; }
+    public Conexion(Nodo a, Nodo b) {
+        this.a = a;
+        this.b = b;
+    }
 
-    /** Dibuja la arista con clipping a bordes, paralelas y self-loop. */
+    public void setEtiqueta(String e) {
+        this.etiqueta = e;
+    }
+
     public void dibujar(Graphics2D g2, List<Conexion> todas) {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        if (a == b) { dibujarSelfLoop(g2); return; }
+        if (a == b) {
+            dibujarSelfLoop(g2);
+            return;
+        }
 
         int[] idx = paraleloIndex(this, todas);
         int index = idx[0], count = idx[1];
@@ -52,11 +60,9 @@ public class Conexion {
         }
     }
 
-    /* ---------- helpers ---------- */
-
     private void dibujarSelfLoop(Graphics2D g2) {
         int r = Nodo.R + 6;
-        int w = (int)(1.6 * r), h = (int)(1.1 * r);
+        int w = (int) (1.6 * r), h = (int) (1.1 * r);
         int x = a.x + r / 2, y = a.y - r - h / 2;
 
         Arc2D arco = new Arc2D.Double(x, y, w, h, 10, 320, Arc2D.OPEN);
@@ -77,7 +83,7 @@ public class Conexion {
             }
         }
         count = seen;
-        idx -= (count - 1) / 2.0; // centra alrededor de 0
+        idx -= (count - 1) / 2.0;
         return new int[]{idx, count};
     }
 

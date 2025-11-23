@@ -3,17 +3,20 @@ com\mycompany\proyectopcypoto2025\Job$Estado.class
 com\mycompany\proyectopcypoto2025\CenaFilosofosPanel.class
 com\mycompany\proyectopcypoto2025\BarberoDormilonPanel$Sala.class
 com\mycompany\proyectopcypoto2025\Job.class
+com\mycompany\proyectopcypoto2025\LectoresEscritoresPanel$Biblioteca.class
 com\mycompany\proyectopcypoto2025\Nodo$Tipo.class
 com\mycompany\proyectopcypoto2025\MonolithStyle.class
 com\mycompany\proyectopcypoto2025\DrawUtil.class
 com\mycompany\proyectopcypoto2025\GrafoPanel.class
 com\mycompany\proyectopcypoto2025\ProductorConsumidorPanel$Tanque.class
 com\mycompany\proyectopcypoto2025\Conexion.class
+com\mycompany\proyectopcypoto2025\LectoresEscritoresPanel$Biblioteca$EstadoLector.class
 com\mycompany\proyectopcypoto2025\MetricasPanelJFree$Mode.class
 com\mycompany\proyectopcypoto2025\Nodo.class
 com\mycompany\proyectopcypoto2025\FumadoresPanel.class
 com\mycompany\proyectopcypoto2025\GpuClusterPanel.class
 com\mycompany\proyectopcypoto2025\Reseteable.class
+com\mycompany\proyectopcypoto2025\LectoresEscritoresPanel$Biblioteca$EstadoEscritor.class
 com\mycompany\proyectopcypoto2025\CenaFilosofosPanel$Mesa.class
 com\mycompany\proyectopcypoto2025\SyncMode.class
 com\mycompany\proyectopcypoto2025\DeadlockAware.class
@@ -28,6 +31,5 @@ com\mycompany\proyectopcypoto2025\BarberoDormilonPanel.class
 com\mycompany\proyectopcypoto2025\DibujaGrafo.class
 com\mycompany\proyectopcypoto2025\ProductorConsumidorPanel.class
 com\mycompany\proyectopcypoto2025\DibujaGrafo$1.class
-com\mycompany\proyectopcypoto2025\LectoresEscritoresPanel$Pizarra.class
 com\mycompany\proyectopcypoto2025\PlanificadorGPU.class
 com\mycompany\proyectopcypoto2025\MetricasPanelJFree.class

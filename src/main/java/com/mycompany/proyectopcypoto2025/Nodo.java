@@ -7,12 +7,12 @@ public class Nodo {
     public enum Tipo { PROCESO, RECURSO }
 
     public final String nombre;
-    public int x, y;               // centro geométrico
+    public int x, y;
     public final Tipo tipo;
-    public Color fill;              
+    public Color fill;
 
-    public static final int SIZE = 52;       // ancho/alto base
-    public static final int R = SIZE / 2;    // radio “visual”
+    public static final int SIZE = 52;
+    public static final int R = SIZE / 2;
 
     public Nodo(String nombre, int x, int y, Tipo tipo, Color fill) {
         this.nombre = nombre;
@@ -22,7 +22,6 @@ public class Nodo {
         this.fill = fill;
     }
 
-    /** Forma exacta del nodo para pintar (en coords de mundo). */
     public Shape shape() {
         int left = x - R, top = y - R;
         if (tipo == Tipo.PROCESO) {
@@ -32,17 +31,14 @@ public class Nodo {
         }
     }
 
-    /** Punto del borde donde el segmento (centro -> target) intersecta la forma. */
     public Point2D bordeHacia(Point2D target) {
         if (tipo == Tipo.PROCESO) {
-            // elipse
             double rx = (SIZE - 2) / 2.0, ry = (SIZE - 2) / 2.0;
             double ang = Math.atan2(target.getY() - y, target.getX() - x);
             double bx = x + rx * Math.cos(ang);
             double by = y + ry * Math.sin(ang);
             return new Point2D.Double(bx, by);
         } else {
-            // rect redondeado: aproximación por rectángulo interior con padding
             int pad = 6;
             double x1 = x - R + pad, y1 = y - R + pad;
             double x2 = x + R - pad, y2 = y + R - pad;
@@ -58,7 +54,8 @@ public class Nodo {
                 double t = (tx - x) / dx;
                 double iy = y + t * dy;
                 if (t > 0 && iy >= y1 && iy <= y2 && t < tMin) {
-                    tMin = t; best = new Point2D.Double(tx, iy);
+                    tMin = t;
+                    best = new Point2D.Double(tx, iy);
                 }
             }
             if (dy != 0) {
@@ -66,7 +63,8 @@ public class Nodo {
                 double t = (ty - y) / dy;
                 double ix = x + t * dx;
                 if (t > 0 && ix >= x1 && ix <= x2 && t < tMin) {
-                    tMin = t; best = new Point2D.Double(ix, ty);
+                    tMin = t;
+                    best = new Point2D.Double(ix, ty);
                 }
             }
             return best;
