@@ -20,6 +20,8 @@ public class PlanificadorGPU {
     
     private final Set<Job> preemptTargets = new HashSet<>();
     
+    private MetricasGpuCollector metricas;
+    
     public PlanificadorGPU(int numIslas, int gpusPorIsla, int tokensG, int tokensI, int K) {
         gpuLibres = new HashMap<>();
         tokensIsla = new HashMap<>();
@@ -29,6 +31,15 @@ public class PlanificadorGPU {
         }
         this.tokensGlobal = tokensG;
         this.ventanasLibres = K;
+        this.metricas = new MetricasGpuCollector();
+    }
+    
+    public void setMetricasCollector(MetricasGpuCollector metricas) {
+        this.metricas = metricas;
+    }
+    
+    public MetricasGpuCollector getMetricas() {
+        return metricas;
     }
 
     private boolean puedeAsignar(Job J) { 
@@ -61,6 +72,8 @@ public class PlanificadorGPU {
     public void solicitarGang(Job J) throws InterruptedException {
         (J.prioridadAlta ? colaAlta : colaNormal).offer(J);
         
+        long tiempoInicio = System.currentTimeMillis();
+        
         synchronized (cvAsignacion) {
             while (true) {
                 Job currentTop = topeCola();
@@ -77,13 +90,24 @@ public class PlanificadorGPU {
                         J.islaAsignada = i;
                         J.estado = Job.Estado.RUN;
 
+                        if (metricas != null) {
+                            metricas.registrarAsignacion();
+                            int tiempoEspera = (int)(System.currentTimeMillis() - tiempoInicio);
+                            metricas.registrarTiempoEspera(tiempoEspera);
+                            actualizarMetricasEnTiempoReal();
+                        }
+
                         System.out.printf("[%s] Asignado en Isla %d.\n", J.id, i);
                         
                         cvAsignacion.notifyAll();
                         return;
                     }
+                } else {
+                    if (metricas != null && !esTope) {
+                        metricas.registrarConflicto();
+                    }
                 }
-                cvAsignacion.wait();
+                cvAsignacion.wait(50);
             }
         }
     }
@@ -101,11 +125,20 @@ public class PlanificadorGPU {
                     liberarRecursos(J);
                     J.replicasEnBarrera.set(0); 
                     J.estado = Job.Estado.PREEMPTED;
+                    
+                    if (metricas != null) {
+                        metricas.registrarPreempcion();
+                    }
+                    
                     cvBarrera.notifyAll();
                     throw new InterruptedException("Preemptado/Abortado.");
                 } else if (J.fallosReportados.get() > 0) {
                     J.replicasEnBarrera.set(0); 
                     J.fallosReportados.set(0); 
+                }
+                
+                if (metricas != null) {
+                    metricas.registrarBarreraCompletada();
                 }
                 
                 J.replicasEnBarrera.set(0); 
@@ -133,6 +166,7 @@ public class PlanificadorGPU {
                 tokensIsla.put(J.islaAsignada, tokensIsla.get(J.islaAsignada) - J.b);
                 
                 J.estado = Job.Estado.COMM;
+                actualizarMetricasEnTiempoReal();
             }
         }
     }
@@ -147,6 +181,7 @@ public class PlanificadorGPU {
                 
                 cvVentanas.notifyAll();
                 cvTokens.notifyAll();
+                actualizarMetricasEnTiempoReal();
             }
         }
     }
@@ -179,10 +214,29 @@ public class PlanificadorGPU {
             J.islaAsignada = -1;
             
             cvAsignacion.notifyAll();
+            actualizarMetricasEnTiempoReal();
         }
         
         synchronized (cvTokens) {
             cvTokens.notifyAll(); 
+        }
+    }
+    
+    private void actualizarMetricasEnTiempoReal() {
+        if (metricas != null) {
+            metricas.actualizarJobsEnCola(colaAlta.size() + colaNormal.size());
+            
+            int jobsEjec = 0;
+            for (Job j : colaAlta) {
+                if (j.estaEjecutando()) jobsEjec++;
+            }
+            for (Job j : colaNormal) {
+                if (j.estaEjecutando()) jobsEjec++;
+            }
+            metricas.actualizarJobsEjecutando(jobsEjec);
+            
+            int recursosLibres = tokensGlobal + ventanasLibres;
+            metricas.actualizarRecursosLibres(recursosLibres);
         }
     }
 

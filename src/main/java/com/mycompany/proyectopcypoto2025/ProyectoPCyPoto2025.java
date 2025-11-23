@@ -6,18 +6,21 @@ import java.awt.*;
 public class ProyectoPCyPoto2025 extends JFrame {
     private final PanelProblemas izq = new PanelProblemas();
     private final GrafoPanel derG = new GrafoPanel();
-    private final MetricasPanelJFree derM = new MetricasPanelJFree();
+    private final MetricasGpuPanel derM = new MetricasGpuPanel();
+    private final MetricasGpuCollector metricasCollector = new MetricasGpuCollector();
 
     public ProyectoPCyPoto2025() {
-        super("Proyecto PCyP Otoño 2025 - Animaciones");
+        super("Proyecto PCyP Otoño 2025 - Animaciones + Métricas GPU");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1280, 800));
         setLocationByPlatform(true);
         setJMenuBar(menu());
 
+        derM.setMetricasCollector(metricasCollector);
+
         JSplitPane right = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
                 wrap("Grafo de Recursos", derG),
-                wrap("Métricas (JFreeChart)", derM));
+                wrap("Métricas GPU - Mecanismos de Sincronización", derM));
         right.setResizeWeight(0.6);
 
         JSplitPane root = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
@@ -32,14 +35,12 @@ public class ProyectoPCyPoto2025 extends JFrame {
     private JMenuBar menu() {
         JMenuBar mb = new JMenuBar();
 
-        // Menú Archivo
         JMenu archivo = new JMenu("Archivo");
         JMenuItem salir = new JMenuItem("Salir");
         salir.addActionListener(e -> System.exit(0));
         archivo.add(salir);
         mb.add(archivo);
 
-        // Menú Sincronización
         JMenu synch = new JMenu("Sincronización");
         synch.add(crearItemSync("Semáforos", SyncMode.SEMAFOROS));
         synch.add(crearItemSync("Variables de condición", SyncMode.VAR_CONDICION));
@@ -48,20 +49,25 @@ public class ProyectoPCyPoto2025 extends JFrame {
         synch.add(crearItemSync("Barreras", SyncMode.BARRERAS));
         mb.add(synch);
 
-        // Menú Gráfica
         JMenu graf = new JMenu("Gráfica");
         JMenuItem scroll = new JMenuItem("Scroll");
-        scroll.addActionListener(e -> derM.setMode(MetricasPanelJFree.Mode.SCROLL));
+        scroll.addActionListener(e -> derM.setMode(MetricasGpuPanel.Mode.SCROLL));
         JMenuItem carr = new JMenuItem("Carrusel");
-        carr.addActionListener(e -> derM.setMode(MetricasPanelJFree.Mode.CARRUSEL));
+        carr.addActionListener(e -> derM.setMode(MetricasGpuPanel.Mode.CARRUSEL));
         JMenuItem acor = new JMenuItem("Acordeón");
-        acor.addActionListener(e -> derM.setMode(MetricasPanelJFree.Mode.ACORDEON));
+        acor.addActionListener(e -> derM.setMode(MetricasGpuPanel.Mode.ACORDEON));
+        JMenuItem reset = new JMenuItem("Reset Métricas");
+        reset.addActionListener(e -> {
+            derM.reset();
+            metricasCollector.reset();
+        });
         graf.add(scroll);
         graf.add(carr);
         graf.add(acor);
+        graf.addSeparator();
+        graf.add(reset);
         mb.add(graf);
 
-        // Menú Problemas
         JMenu prob = new JMenu("Problemas");
         prob.add(crearItemProblema("Productor-Consumidor"));
         prob.add(crearItemProblema("Cena de Filósofos"));
@@ -71,7 +77,6 @@ public class ProyectoPCyPoto2025 extends JFrame {
         prob.add(crearItemProblema("Clúster GPU"));
         mb.add(prob);
 
-        // Menú Deadlock
         JMenu dead = new JMenu("Deadlock");
         JMenuItem eje = new JMenuItem("Ejecutar");
         eje.addActionListener(e -> {
@@ -108,7 +113,10 @@ public class ProyectoPCyPoto2025 extends JFrame {
 
     private JMenuItem crearItemSync(String nombre, SyncMode modo) {
         JMenuItem item = new JMenuItem(nombre);
-        item.addActionListener(e -> izq.setSyncMode(modo));
+        item.addActionListener(e -> {
+            izq.setSyncMode(modo);
+            metricasCollector.setModoActual(modo);
+        });
         return item;
     }
 
@@ -117,6 +125,17 @@ public class ProyectoPCyPoto2025 extends JFrame {
         item.addActionListener(e -> {
             izq.mostrar(nombre);
             derG.mostrarProblema(nombre);
+            
+            if ("Clúster GPU".equals(nombre)) {
+                for (Component c : izq.getComponents()) {
+                    if (c instanceof GpuClusterPanel) {
+                        GpuClusterPanel gpuPanel = (GpuClusterPanel) c;
+                        gpuPanel.setMetricasCollector(metricasCollector);
+                        break;
+                    }
+                }
+            }
+            
             revalidate();
             repaint();
         });

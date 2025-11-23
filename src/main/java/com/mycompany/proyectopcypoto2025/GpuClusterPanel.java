@@ -19,21 +19,18 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
     
     private SyncMode currentMode = SyncMode.MONITORES;
 
-    // Parámetros del clúster
     private final int NUM_ISLAS = 3;
     private final int GPUS_POR_ISLA = 8;
     private final int TOKENS_GLOBAL = 30;
     private final int TOKENS_ISLA = 12;
     private final int VENTANAS_K = 3;
     
-    // Animación
     private float[] particleOffsets = new float[50];
 
     public GpuClusterPanel() {
         setLayout(new BorderLayout());
         setBackground(new Color(20, 20, 40));
         
-        // Inicializar partículas
         for (int i = 0; i < particleOffsets.length; i++) {
             particleOffsets[i] = (float) (Math.random() * Math.PI * 2);
         }
@@ -44,7 +41,6 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         
         animTimer = new Timer(50, e -> {
             frameCount++;
-            // Actualizar partículas
             for (int i = 0; i < particleOffsets.length; i++) {
                 particleOffsets[i] += 0.05f;
             }
@@ -159,34 +155,27 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         
         int W = getWidth(), H = getHeight();
         
-        // Fondo oscuro estilo data center
         GradientPaint bgGrad = new GradientPaint(0, 0, new Color(15, 15, 30),
                 0, H, new Color(25, 15, 35));
         g2.setPaint(bgGrad);
         g2.fillRect(0, 0, W, H);
         
-        // Dibujar partículas de fondo
         dibujarParticulasFondo(g2, W, H);
         
-        // Calcular layout: 60% izquierda para islas, 40% derecha para colas
         int leftWidth = (int)(W * 0.60);
         int rightWidth = W - leftWidth;
         
         int islandHeight = (H - 100) / NUM_ISLAS;
         
-        // Dibujar Islas GPU (lado izquierdo)
         for (int i = 0; i < NUM_ISLAS; i++) {
             int y = 50 + i * islandHeight;
             dibujarIsla(g2, i, 20, y, leftWidth - 40, islandHeight - 15);
         }
         
-        // Panel lateral para colas (lado derecho)
         dibujarPanelColas(g2, leftWidth + 10, 50, rightWidth - 30, H - 100);
         
-        // Dibujar Estado Global en la parte inferior
         dibujarEstadoGlobal(g2, leftWidth / 2, H - 25);
 
-        // Info del modo en la esquina superior derecha
         dibujarInfoModo(g2, W, 20);
         
         g2.dispose();
@@ -204,42 +193,34 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
     }
     
     private void dibujarIsla(Graphics2D g2, int id, int x, int y, int w, int h) {
-        // Sombra profunda
         g2.setColor(new Color(0, 0, 0, 100));
         g2.fillRoundRect(x + 5, y + 5, w, h, 15, 15);
         
-        // Fondo de isla estilo servidor con textura
         GradientPaint islandGrad = new GradientPaint(x, y, new Color(35, 35, 55),
                 x, y + h, new Color(20, 20, 35));
         g2.setPaint(islandGrad);
         g2.fillRoundRect(x, y, w, h, 15, 15);
         
-        // Borde con efecto neón
         g2.setColor(new Color(0, 200, 255, 200));
         g2.setStroke(new BasicStroke(2f));
         g2.drawRoundRect(x, y, w, h, 15, 15);
         
-        // Título de la isla con estilo LED
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 16f));
         g2.setColor(new Color(0, 255, 200));
         g2.drawString("ISLA GPU " + id, x + 12, y + 22);
         
-        // Estadísticas
         int gpusLibres = planificador.getGpuLibres().getOrDefault(id, 0);
         int gpusUsados = GPUS_POR_ISLA - gpusLibres;
         int tokensLibres = planificador.getTokensIsla().getOrDefault(id, 0);
         
-        // Mostrar estadísticas en formato compacto
         g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 11f));
         g2.setColor(new Color(180, 180, 200));
         g2.drawString("GPUs: " + gpusUsados + "/" + GPUS_POR_ISLA, x + 12, y + 38);
         
-        // Barra de Tokens estilo LCD
         int barY = y + 45;
         dibujarBarraRecurso(g2, x + 12, barY, w - 24, 14,
                            tokensLibres, TOKENS_ISLA, "Tokens", new Color(255, 200, 0));
         
-        // Grid de GPUs alineados horizontalmente
         int gx = x + 12;
         int gy = y + 68;
         int availableWidth = w - 24;
@@ -254,17 +235,14 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             dibujarGPUMejorado(g2, currentGx, gy, coreColor, libre, gpuWidth);
         }
         
-        // Dibujar trabajos asignados a esta isla (debajo de los GPUs)
         dibujarTrabajosEnIsla(g2, id, x, gy + 65, w, h - (gy + 65 - y));
     }
     
     private void dibujarBarraRecurso(Graphics2D g2, int x, int y, int w, int h,
                                      int valor, int maximo, String label, Color color) {
-        // Fondo de barra
         g2.setColor(new Color(20, 20, 30));
         g2.fillRoundRect(x, y, w, h, 8, 8);
         
-        // Progreso
         float ratio = (float) valor / maximo;
         int barW = Math.max(0, Math.min(w, (int) (w * ratio)));
         
@@ -275,23 +253,19 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             g2.fillRoundRect(x, y, barW, h, 8, 8);
         }
         
-        // Borde
         g2.setColor(new Color(100, 100, 150));
         g2.setStroke(new BasicStroke(1.5f));
         g2.drawRoundRect(x, y, w, h, 8, 8);
         
-        // Texto con recorte para que no se salga
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
         g2.setColor(Color.WHITE);
         String text = label + ": " + valor + "/" + maximo;
         FontMetrics fm = g2.getFontMetrics();
         int textWidth = fm.stringWidth(text);
         
-        // Si el texto es más ancho que la barra, centrarlo
         int textX = x + Math.max(2, (w - textWidth) / 2);
         int textY = y + (h + fm.getAscent()) / 2 - 2;
         
-        // Crear clip para que el texto no se salga
         Shape oldClip = g2.getClip();
         g2.setClip(x, y, w, h);
         g2.drawString(text, textX, textY);
@@ -301,44 +275,36 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
     private void dibujarGPUMejorado(Graphics2D g2, int x, int y, Color coreColor, boolean activo, int w) {
         int h = 55;
         
-        // Sombra del GPU
         g2.setColor(new Color(0, 0, 0, 80));
         g2.fillRoundRect(x + 2, y + 2, w, h, 8, 8);
         
-        // Cuerpo del GPU con textura metálica
         GradientPaint gpuGrad = new GradientPaint(x, y, new Color(50, 50, 65),
                 x, y + h, new Color(30, 30, 45));
         g2.setPaint(gpuGrad);
         g2.fillRoundRect(x, y, w, h, 8, 8);
         
-        // Líneas decorativas superiores (ventilación)
         g2.setColor(new Color(20, 20, 30));
         for (int i = 0; i < 3; i++) {
             g2.fillRect(x + 4, y + 4 + i * 3, w - 8, 2);
         }
         
-        // Core central con efecto de brillo
         int coreSize = 20;
         int coreX = x + (w - coreSize) / 2;
         int coreY = y + 15;
         
         if (activo) {
-            // Halo de luz pulsante
             float pulse = (float) (Math.sin(frameCount * 0.15) * 0.4 + 0.6);
             
-            // Halo exterior
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulse * 0.3f));
             g2.setColor(coreColor);
             g2.fillOval(coreX - 6, coreY - 6, coreSize + 12, coreSize + 12);
             
-            // Halo medio
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulse * 0.5f));
             g2.fillOval(coreX - 3, coreY - 3, coreSize + 6, coreSize + 6);
             
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
         }
         
-        // Core principal con gradiente radial
         RadialGradientPaint coreGrad = new RadialGradientPaint(
             coreX + coreSize/2f, coreY + coreSize/2f, coreSize/2f,
             new float[]{0.0f, 0.7f, 1.0f},
@@ -347,12 +313,10 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         g2.setPaint(coreGrad);
         g2.fillOval(coreX, coreY, coreSize, coreSize);
         
-        // Borde del core
         g2.setColor(coreColor.darker());
         g2.setStroke(new BasicStroke(1.5f));
         g2.drawOval(coreX, coreY, coreSize, coreSize);
         
-        // Líneas de datos (decorativas)
         g2.setColor(new Color(60, 60, 80));
         g2.setStroke(new BasicStroke(1.2f));
         for (int i = 0; i < 3; i++) {
@@ -360,17 +324,14 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             g2.drawLine(x + 6, lineY, x + w - 6, lineY);
         }
         
-        // Borde del GPU
         g2.setColor(activo ? coreColor.darker() : new Color(60, 60, 70));
         g2.setStroke(new BasicStroke(2f));
         g2.drawRoundRect(x, y, w, h, 8, 8);
         
-        // LED indicador en la esquina superior
         int ledSize = 5;
         g2.setColor(activo ? new Color(0, 255, 100) : new Color(255, 50, 50));
         g2.fillOval(x + w - ledSize - 4, y + 4, ledSize, ledSize);
         
-        // Brillo del LED
         if (activo) {
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
             g2.fillOval(x + w - ledSize - 5, y + 3, ledSize + 2, ledSize + 2);
@@ -398,7 +359,6 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             dibujarTarjetaTrabajo(g2, jobX, jobY + i * (28 + jobSpacing), iw - 20, 25, j);
         }
         
-        // Si hay más trabajos, mostrar indicador
         if (jobsEnIsla.size() > maxJobsToShow) {
             g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
             g2.setColor(new Color(150, 150, 200));
@@ -408,7 +368,6 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
     }
     
     private void dibujarTarjetaTrabajo(Graphics2D g2, int x, int y, int w, int h, Job job) {
-        // Color según estado con esquema más oscuro
         Color cardColor = switch (job.estado) {
             case RUN -> new Color(0, 120, 80);
             case BARRIER -> new Color(180, 140, 0);
@@ -416,29 +375,23 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             default -> new Color(60, 60, 60);
         };
         
-        // Sombra
         g2.setColor(new Color(0, 0, 0, 100));
         g2.fillRoundRect(x + 2, y + 2, w, h, 8, 8);
         
-        // Fondo de tarjeta
         g2.setColor(cardColor.darker());
         g2.fillRoundRect(x, y, w, h, 8, 8);
         
-        // Borde con brillo
         g2.setColor(cardColor.brighter());
         g2.setStroke(new BasicStroke(1.5f));
         g2.drawRoundRect(x, y, w, h, 8, 8);
         
-        // Crear clip para evitar que el contenido se salga
         Shape oldClip = g2.getClip();
         g2.setClip(x, y, w, h);
         
-        // ID del trabajo - más pequeño y compacto
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 11f));
         g2.setColor(Color.WHITE);
         g2.drawString(job.id, x + 6, y + 13);
         
-        // Estado - abreviado
         g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 9f));
         g2.setColor(new Color(200, 200, 200));
         String estadoAbr = switch(job.estado) {
@@ -449,14 +402,12 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         };
         g2.drawString(estadoAbr, x + 6, y + h - 5);
         
-        // Recursos en el lado derecho
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 9f));
         g2.setColor(new Color(150, 255, 150));
         g2.drawString("G:" + job.g, x + w - 45, y + 13);
         g2.setColor(new Color(255, 200, 100));
         g2.drawString("B:" + job.b, x + w - 45, y + h - 5);
         
-        // Mini barra de progreso
         if (job.estado == Job.Estado.RUN || job.estado == Job.Estado.COMM) {
             float progress = ((frameCount * 2 + job.id.hashCode()) % 200) / 200f;
             int maxBarW = w - 55;
@@ -466,12 +417,10 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             g2.fillRoundRect(x + 40, y + h - 8, barW, 3, 2, 2);
         }
         
-        // Restaurar clip
         g2.setClip(oldClip);
     }
     
     private void dibujarPanelColas(Graphics2D g2, int x, int y, int w, int h) {
-        // Fondo del panel oscuro
         g2.setColor(new Color(25, 25, 40, 220));
         g2.fillRoundRect(x, y, w, h, 12, 12);
         
@@ -479,19 +428,16 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         g2.setStroke(new BasicStroke(2f));
         g2.drawRoundRect(x, y, w, h, 12, 12);
         
-        // Título principal
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 15f));
         g2.setColor(new Color(0, 200, 255));
         g2.drawString("COLAS DE TRABAJOS", x + 10, y + 22);
         
-        // Línea separadora
         g2.setColor(new Color(100, 100, 150, 100));
         g2.setStroke(new BasicStroke(1f));
         g2.drawLine(x + 10, y + 28, x + w - 10, y + 28);
         
         int qY = y + 40;
         
-        // Cola de alta prioridad
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 13f));
         g2.setColor(new Color(255, 180, 0));
         g2.drawString("⚡ Alta Prioridad", x + 10, qY);
@@ -515,13 +461,11 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             index++;
         }
         
-        // Separador
         qY += 8;
         g2.setColor(new Color(100, 100, 150, 100));
         g2.drawLine(x + 10, qY, x + w - 10, qY);
         qY += 18;
         
-        // Cola normal
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 13f));
         g2.setColor(new Color(100, 200, 255));
         g2.drawString("⏱ Normal", x + 10, qY);
@@ -550,31 +494,25 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         Color bgColor = alta ? new Color(60, 50, 30) : new Color(30, 50, 60);
         Color borderColor = alta ? new Color(255, 180, 0) : new Color(100, 180, 255);
         
-        // Sombra
         g2.setColor(new Color(0, 0, 0, 80));
         g2.fillRoundRect(x + 2, y + 2, w, 26, 6, 6);
         
-        // Fondo
         g2.setColor(bgColor);
         g2.fillRoundRect(x, y, w, 26, 6, 6);
         
-        // Borde animado para indicar espera
         float dashPhase = (frameCount * 0.5f) % 10;
         g2.setColor(borderColor);
         g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 
                                      10.0f, new float[]{5, 5}, dashPhase));
         g2.drawRoundRect(x, y, w, 26, 6, 6);
         
-        // Crear clip para evitar desbordamiento
         Shape oldClip = g2.getClip();
         g2.setClip(x, y, w, 26);
         
-        // ID del trabajo
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 11f));
         g2.setColor(Color.WHITE);
         g2.drawString(job.id, x + 8, y + 14);
         
-        // Icono de reloj animado
         float angle = (frameCount * 0.15f) % 360;
         g2.setColor(new Color(255, 255, 100, 180));
         g2.setStroke(new BasicStroke(1.5f));
@@ -583,7 +521,6 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         Arc2D arc = new Arc2D.Float(clockX, clockY, 14, 14, angle, 300, Arc2D.OPEN);
         g2.draw(arc);
         
-        // Recursos requeridos (centrados)
         g2.setFont(g2.getFont().deriveFont(Font.PLAIN, 9f));
         g2.setColor(new Color(180, 180, 200));
         String recursos = "G:" + job.g + " T:" + job.b;
@@ -592,7 +529,6 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         int textX = x + (w - textWidth - 40) / 2 + 25;
         g2.drawString(recursos, textX, y + 14);
         
-        // Indicador de prioridad (flecha)
         if (alta) {
             g2.setColor(new Color(255, 200, 0));
             int[] xPoints = {x + w - 48, x + w - 52, x + w - 44};
@@ -600,7 +536,6 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             g2.fillPolygon(xPoints, yPoints, 3);
         }
         
-        // Restaurar clip
         g2.setClip(oldClip);
     }
     
@@ -609,7 +544,6 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         int h = 50;
         int x = cx - w / 2;
         
-        // Fondo con sombra
         g2.setColor(new Color(0, 0, 0, 100));
         g2.fillRoundRect(x + 3, y - h / 2 + 3, w, h, 15, 15);
         
@@ -622,26 +556,21 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         g2.setStroke(new BasicStroke(2f));
         g2.drawRoundRect(x, y - h / 2, w, h, 15, 15);
         
-        // Crear clip para evitar desbordamiento
         Shape oldClip = g2.getClip();
         g2.setClip(x, y - h / 2, w, h);
         
-        // Calcular ancho disponible para barras
         int barWidth = Math.min(220, (w - 30) / 2);
         
-        // Tokens globales
         int B_USED = TOKENS_GLOBAL - planificador.getTokensGlobal();
         dibujarBarraRecurso(g2, x + 10, y - h / 2 + 8, barWidth, 16,
                            planificador.getTokensGlobal(), TOKENS_GLOBAL,
                            "Tokens Globales", new Color(0, 200, 255));
         
-        // Ventanas K
         int K_USED = VENTANAS_K - planificador.getVentanasLibres();
         dibujarBarraRecurso(g2, x + barWidth + 20, y - h / 2 + 8, Math.min(120, w - barWidth - 140), 16,
                            planificador.getVentanasLibres(), VENTANAS_K,
                            "Ventanas", new Color(255, 150, 0));
         
-        // Estadísticas de colas (compacto)
         g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
         g2.setColor(Color.WHITE);
         int colaAlta = planificador.getColaAlta().size();
@@ -653,7 +582,6 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             g2.drawString("Cola N:" + colaNormal, statsX, y - h / 2 + 32);
         }
         
-        // Restaurar clip
         g2.setClip(oldClip);
     }
     
@@ -666,16 +594,13 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         
         int x = W - tw - 25;
         
-        // Fondo oscuro
         g2.setColor(new Color(20, 20, 35, 200));
         g2.fillRoundRect(x - 10, y - 14, tw + 20, 22, 8, 8);
         
-        // Borde
         g2.setColor(new Color(100, 200, 255));
         g2.setStroke(new BasicStroke(1.5f));
         g2.drawRoundRect(x - 10, y - 14, tw + 20, 22, 8, 8);
         
-        // Texto
         g2.setColor(new Color(120, 120, 140));
         g2.drawString("MODO:", x, y);
         g2.setColor(new Color(0, 255, 150));
@@ -711,6 +636,20 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
             Thread.sleep(ms);
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    // MÉTODOS PARA CONECTAR CON EL SISTEMA DE MÉTRICAS
+    public MetricasGpuCollector getMetricasCollector() {
+        if (planificador != null && planificador.getMetricas() != null) {
+            return planificador.getMetricas();
+        }
+        return null;
+    }
+
+    public void setMetricasCollector(MetricasGpuCollector metricas) {
+        if (planificador != null) {
+            planificador.setMetricasCollector(metricas);
         }
     }
 }
