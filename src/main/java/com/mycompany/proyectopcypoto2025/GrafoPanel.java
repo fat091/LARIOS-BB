@@ -14,10 +14,12 @@ public class GrafoPanel extends JPanel {
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         add(sp, BorderLayout.CENTER);
 
+        // Inicializar con el problema por defecto
         grafo.configurarProblema("filosofos");
     }
 
     public void mostrarProblema(String tipo) {
+        // Mapear nombres de menú a identificadores internos
         String tipoInterno = switch (tipo) {
             case "Clúster GPU" -> "gpu_cluster";
             case "Cena de Filósofos" -> "filosofos";

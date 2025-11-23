@@ -5,11 +5,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
 import java.util.*;
+import java.util.List;
 
 public class DibujaGrafo extends JPanel {
 
-    private final java.util.List<Nodo> nodos = new ArrayList<>();
-    private final java.util.List<Conexion> aristas = new ArrayList<>();
+    private final List<Nodo> nodos = new ArrayList<>();
+    private final List<Conexion> aristas = new ArrayList<>();
     private final Map<String, Nodo> by = new HashMap<>();
 
     private double z = 1.0;
@@ -20,7 +21,7 @@ public class DibujaGrafo extends JPanel {
 
     private javax.swing.Timer animTimer;
     private int pasoActual = 0;
-    private java.util.List<Conexion> pasos = new ArrayList<>();
+    private List<Conexion> pasos = new ArrayList<>();
     private String problemaActual = "";
 
     public DibujaGrafo() {
@@ -33,6 +34,9 @@ public class DibujaGrafo extends JPanel {
         nodos.clear();
         aristas.clear();
         by.clear();
+        pan.x = 0;
+        pan.y = 0;
+        z = 1.0;
         repaint();
         
         problemaActual = tipo.toLowerCase().replace("á", "a").replace("-", " ").replace("ñ", "n").trim();
@@ -71,15 +75,9 @@ public class DibujaGrafo extends JPanel {
                 baseLectoresEscritores();
                 animarSecuenciaLectoresEscritores();
             }
-            case "gpu_cluster", "clúster gpu" -> {
-                baseGpuCluster();
-                animarSecuencia(Arrays.asList(
-                    new String[]{"J1", "I0"},
-                    new String[]{"J1", "G"},
-                    new String[]{"I0", "J1"},
-                    new String[]{"G", "J1"},
-                    new String[]{"J1", "K"}
-                ), false);
+            case "gpu_cluster", "clúster gpu", "cluster gpu" -> {
+                baseGpuClusterMejorado();
+                animarSecuenciaGpuCluster();
             }
             case "deadlock" -> {
                 baseDeadlockGeneral();
@@ -91,6 +89,53 @@ public class DibujaGrafo extends JPanel {
             }
             default -> JOptionPane.showMessageDialog(this, "Tipo no reconocido: " + tipo);
         }
+    }
+
+    private void baseGpuClusterMejorado() {
+        // Jobs (círculos verdes) a la izquierda
+        addN("J1", 100, 100, Nodo.Tipo.PROCESO, new Color(100, 255, 150));
+        addN("J2", 100, 180, Nodo.Tipo.PROCESO, new Color(100, 255, 150));
+        addN("J3", 100, 260, Nodo.Tipo.PROCESO, new Color(100, 255, 150));
+        addN("J4", 100, 340, Nodo.Tipo.PROCESO, new Color(100, 255, 150));
+        
+        // Islas GPU (rectángulos azules) en el centro
+        addN("I0", 320, 120, Nodo.Tipo.RECURSO, new Color(150, 200, 255));
+        addN("I1", 320, 220, Nodo.Tipo.RECURSO, new Color(150, 200, 255));
+        addN("I2", 320, 320, Nodo.Tipo.RECURSO, new Color(150, 200, 255));
+        
+        // Recurso global G (rectángulo púrpura)
+        addN("G", 580, 220, Nodo.Tipo.RECURSO, new Color(200, 150, 255));
+        
+        // Ventana K (rectángulo rosa)
+        addN("K", 750, 100, Nodo.Tipo.RECURSO, new Color(255, 180, 200));
+    }
+
+    private void animarSecuenciaGpuCluster() {
+        aristas.clear();
+        pasos.clear();
+        deadlock = false;
+
+        // Conexiones de Islas a G (tokens globales)
+        pasos.add(crearConexionConLabel(by.get("I0"), by.get("G"), "Tokens Globales"));
+        pasos.add(crearConexionConLabel(by.get("I1"), by.get("G"), "Tokens Globales"));
+        pasos.add(crearConexionConLabel(by.get("I2"), by.get("G"), "Tokens Globales"));
+        
+        // Asignaciones de Jobs a Islas
+        pasos.add(crearConexionConLabel(by.get("J1"), by.get("I0"), "GPUs/Tokens"));
+        pasos.add(crearConexionConLabel(by.get("J2"), by.get("I1"), "GPUs/Tokens"));
+        pasos.add(crearConexionConLabel(by.get("J3"), by.get("I1"), "GPUs/Tokens"));
+        pasos.add(crearConexionConLabel(by.get("J4"), by.get("I2"), "GPUs/Tokens"));
+        
+        // Conexión de G a K (ventanas)
+        pasos.add(crearConexionConLabel(by.get("G"), by.get("K"), "Ventana"));
+
+        iniciarAnimacion();
+    }
+    
+    private Conexion crearConexionConLabel(Nodo a, Nodo b, String label) {
+        Conexion c = new Conexion(a, b);
+        c.setEtiqueta(label);
+        return c;
     }
 
     private void animarSecuenciaBarbero() {
@@ -141,7 +186,7 @@ public class DibujaGrafo extends JPanel {
                 repaint();
             } else {
                 ((javax.swing.Timer) e.getSource()).stop();
-                if (!problemaActual.equals("deadlock")) {
+                if (!problemaActual.equals("deadlock") && !problemaActual.contains("gpu")) {
                     new javax.swing.Timer(2000, ev -> {
                         if (problemaActual.contains("barbero")) {
                             animarSecuenciaBarbero();
@@ -214,25 +259,10 @@ public class DibujaGrafo extends JPanel {
         addN("R3", 420, 280, Nodo.Tipo.RECURSO, new Color(160, 190, 255));
     }
 
-    private void baseGpuCluster() {
-        addN("J1", 100, 200, Nodo.Tipo.PROCESO, new Color(255, 150, 150));
-        addN("G", 550, 200, Nodo.Tipo.RECURSO, new Color(200, 180, 255));
-        addN("K", 700, 200, Nodo.Tipo.RECURSO, new Color(255, 200, 200));
-        addN("I0", 300, 100, Nodo.Tipo.RECURSO, new Color(180, 220, 255));
-        addN("I1", 300, 200, Nodo.Tipo.RECURSO, new Color(180, 220, 255));
-        addN("I2", 300, 300, Nodo.Tipo.RECURSO, new Color(180, 220, 255));
-    }
-
-    private void animarSecuencia(java.util.List<String[]> conexiones, boolean deadlockMode) {
+    private void animarSecuencia(List<String[]> conexiones, boolean deadlockMode) {
         aristas.clear();
         pasos.clear();
         deadlock = deadlockMode;
-
-        if (by.containsKey("I0") && by.containsKey("G")) {
-            pasos.add(new Conexion(by.get("I0"), by.get("G")));
-            pasos.add(new Conexion(by.get("I1"), by.get("G")));
-            pasos.add(new Conexion(by.get("I2"), by.get("G")));
-        }
 
         for (String[] par : conexiones) {
             Nodo na = by.get(par[0]), nb = by.get(par[1]);
@@ -328,6 +358,7 @@ public class DibujaGrafo extends JPanel {
             g2.setStroke(new BasicStroke(1.8f));
             g2.draw(s);
             g2.setColor(Color.BLACK);
+            g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12f));
             FontMetrics fm = g2.getFontMetrics();
             g2.drawString(n.nombre, (int) (n.x - fm.stringWidth(n.nombre) / 2.0),
                     (int) (n.y + fm.getAscent() / 3.0));
