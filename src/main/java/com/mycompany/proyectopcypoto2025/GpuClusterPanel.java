@@ -221,20 +221,35 @@ public class GpuClusterPanel extends JPanel implements Reseteable, Demoable, Syn
         dibujarBarraRecurso(g2, x + 12, barY, w - 24, 14,
                            tokensLibres, TOKENS_ISLA, "Tokens", new Color(255, 200, 0));
         
-        int gx = x + 12;
-        int gy = y + 68;
-        int availableWidth = w - 24;
-        int gpuWidth = 48;
-        int gpuGap = Math.max(4, (availableWidth - (GPUS_POR_ISLA * gpuWidth)) / (GPUS_POR_ISLA - 1));
-        
-        for (int i = 0; i < GPUS_POR_ISLA; i++) {
-            int currentGx = gx + i * (gpuWidth + gpuGap);
-            boolean libre = i < gpusLibres;
-            
-            Color coreColor = libre ? new Color(0, 255, 100) : new Color(255, 50, 50);
-            dibujarGPUMejorado(g2, currentGx, gy, coreColor, libre, gpuWidth);
-        }
-        
+ // Posición de la fila de GPUs
+int gy = y + 68;
+
+// Cálculo dinámico para que todas las GPUs queden bien alineadas y centradas
+int availableWidth = w - 40;          // margen lateral
+int maxGpuWidth = 52;
+int minGpuGap = 4;
+
+// Ancho máximo posible de gpu respetando al menos un gap mínimo
+int gpuWidth = (availableWidth - (GPUS_POR_ISLA - 1) * minGpuGap) / GPUS_POR_ISLA;
+gpuWidth = Math.min(maxGpuWidth, Math.max(32, gpuWidth));  // clamp de seguridad
+
+// Recalcular gap real con ese ancho
+int gpuGap = (availableWidth - GPUS_POR_ISLA * gpuWidth);
+gpuGap = (GPUS_POR_ISLA > 1) ? gpuGap / (GPUS_POR_ISLA - 1) : 0;
+gpuGap = Math.max(minGpuGap, gpuGap);
+
+// Centrar toda la hilera dentro de la isla
+int totalGpusWidth = GPUS_POR_ISLA * gpuWidth + (GPUS_POR_ISLA - 1) * gpuGap;
+int gx = x + (w - totalGpusWidth) / 2;
+
+for (int i = 0; i < GPUS_POR_ISLA; i++) {
+    int currentGx = gx + i * (gpuWidth + gpuGap);
+    boolean libre = i < gpusLibres;
+
+    Color coreColor = libre ? new Color(0, 255, 100) : new Color(255, 50, 50);
+    dibujarGPUMejorado(g2, currentGx, gy, coreColor, libre, gpuWidth);
+}
+
         dibujarTrabajosEnIsla(g2, id, x, gy + 65, w, h - (gy + 65 - y));
     }
     
