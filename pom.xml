@@ -16,6 +16,15 @@
       <artifactId>jfreechart</artifactId>
       <version>1.5.4</version>
     </dependency>
+    
+    <!-- MPJ Express -->
+    <dependency>
+      <groupId>mpjexpress</groupId>
+      <artifactId>mpj</artifactId>
+      <version>0.44</version>
+      <scope>system</scope>
+      <systemPath>${mpj.home}/lib/mpj.jar</systemPath>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

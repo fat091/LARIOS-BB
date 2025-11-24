@@ -3,9 +3,6 @@ package com.mycompany.proyectopcypoto2025;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Recolector de métricas para el GPU Cluster
- */
 public class MetricasGpuCollector {
     
     private final ConcurrentHashMap<SyncMode, AtomicInteger> conflictos = new ConcurrentHashMap<>();
@@ -32,6 +29,14 @@ public class MetricasGpuCollector {
     
     public void setModoActual(SyncMode modo) {
         this.modoActual = modo;
+    }
+    
+    /**
+     * Actualiza métricas desde los cores simulados
+     */
+    public void actualizarMetricaCore(SyncMode modo, int exitosas, int conflicto) {
+        asignaciones.get(modo).set(exitosas);
+        conflictos.get(modo).set(conflicto);
     }
     
     public void registrarConflicto() {
