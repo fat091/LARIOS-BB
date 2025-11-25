@@ -4,8 +4,8 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.mycompany</groupId>
   <artifactId>ProyectoPCyPoto2025</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <name>ProyectoPCyPoto2025</name>
+  <version>1.0.0</version>
+  <name>ProyectoPCYPoto2025</name>
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
@@ -14,16 +14,16 @@
     <dependency>
       <groupId>org.jfree</groupId>
       <artifactId>jfreechart</artifactId>
-      <version>1.5.4</version>
+      <version>1.5.3</version>
     </dependency>
     
     <!-- MPJ Express -->
     <dependency>
-      <groupId>mpjexpress</groupId>
-      <artifactId>mpj</artifactId>
-      <version>0.44</version>
+      <groupId>stmpj</groupId>
+      <artifactId>stmpj</artifactId>
+      <version>1.0.0</version>
       <scope>system</scope>
-      <systemPath>C:/mpj/lib/mpj.jar</systemPath>
+      <systemPath>${project.basedir}/lib/mpj.jar</systemPath>
     </dependency>
   </dependencies>
   <build>
@@ -31,17 +31,12 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
-        <configuration><release>17</release></configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.3.0</version>
+        <version>3.8.1</version>
         <configuration>
-          <archive><manifest><mainClass>com.mycompany.proyectopcypoto2025.ProyectoPCyPoto2025</mainClass></manifest></archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+         <source>17</source>
+         <target>17</target>
+         </configuration>
+       </plugin>
+        </plugins>
+    </build>
 </project>

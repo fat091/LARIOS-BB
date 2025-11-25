@@ -13,7 +13,7 @@ public class ProyectoPCyPoto2025 extends JFrame {
     private JCheckBoxMenuItem simuladorMenuItem;
 
     public ProyectoPCyPoto2025() {
-        super("Proyecto PCyP Otoño 2025 - Animaciones + Métricas GPU + 5 Cores");
+        super("Proyecto PCyP Otoño 2025 - Animaciones + Métricas GPU + 5 Cores MPJ");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1280, 800));
         setLocationByPlatform(true);
@@ -23,7 +23,7 @@ public class ProyectoPCyPoto2025 extends JFrame {
 
         JSplitPane right = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
                 wrap("Grafo de Recursos", derG),
-                wrap("Métricas GPU - 5 Cores en Paralelo", derM));
+                wrap("Métricas GPU - 5 Cores MPJ en Paralelo", derM));
         right.setResizeWeight(0.6);
 
         JSplitPane root = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
@@ -55,8 +55,8 @@ public class ProyectoPCyPoto2025 extends JFrame {
         mb.add(archivo);
 
         // Menú Simulador 5 Cores
-        JMenu coresMenu = new JMenu("5 Cores");
-        simuladorMenuItem = new JCheckBoxMenuItem("🚀 Activar 5 Cores");
+        JMenu coresMenu = new JMenu("5 Cores MPJ");
+        simuladorMenuItem = new JCheckBoxMenuItem("🚀 Activar 5 Cores Locales");
         simuladorMenuItem.addActionListener(e -> {
             if (simuladorMenuItem.isSelected()) {
                 iniciarSimulador();
@@ -65,10 +65,14 @@ public class ProyectoPCyPoto2025 extends JFrame {
             }
         });
         
+        JMenuItem mpjItem = new JMenuItem("🚀 Ejecutar MPJ Express (5 Cores)");
+        mpjItem.addActionListener(e -> ejecutarMPJExpress());
+        
         JMenuItem infoCores = new JMenuItem("ℹ Info 5 Cores");
         infoCores.addActionListener(e -> mostrarInfoCores());
         
         coresMenu.add(simuladorMenuItem);
+        coresMenu.add(mpjItem);
         coresMenu.addSeparator();
         coresMenu.add(infoCores);
         mb.add(coresMenu);
@@ -93,11 +97,14 @@ public class ProyectoPCyPoto2025 extends JFrame {
             derM.reset();
             metricasCollector.reset();
         });
+        JMenuItem cargarMPJ = new JMenuItem("📊 Cargar Datos MPJ");
+        cargarMPJ.addActionListener(e -> derM.cargarDatosDesdeMPJ());
         graf.add(scroll);
         graf.add(carr);
         graf.add(acor);
         graf.addSeparator();
         graf.add(reset);
+        graf.add(cargarMPJ);
         mb.add(graf);
 
         JMenu prob = new JMenu("Problemas");
@@ -143,6 +150,46 @@ public class ProyectoPCyPoto2025 extends JFrame {
         return mb;
     }
     
+    private void ejecutarMPJExpress() {
+        new Thread(() -> {
+            try {
+                JOptionPane.showMessageDialog(this,
+                    "🚀 Iniciando MPJ Express con 5 cores...\n\n" +
+                    "🔵 Core 0: Semáforos\n" +
+                    "🔴 Core 1: Variables de Condición\n" +
+                    "🟢 Core 2: Monitores\n" +
+                    "🟠 Core 3: Mutex\n" +
+                    "🟣 Core 4: Barreras\n\n" +
+                    "Los datos se guardarán en mpj_metrics.csv",
+                    "Ejecutando MPJ Express", JOptionPane.INFORMATION_MESSAGE);
+                    
+                String[] args = new String[0];
+                SyncMetricsMPJ.main(args);
+                
+                // Cuando termina MPJ, cargar los datos en el panel
+                SwingUtilities.invokeLater(() -> {
+                    derM.cargarDatosDesdeMPJ();
+                    JOptionPane.showMessageDialog(this,
+                        "✅ Ejecución MPJ Express completada\n" +
+                        "📊 Datos cargados en las gráficas\n\n" +
+                        "Archivos generados:\n" +
+                        "• mpj_tiempos.csv\n" +
+                        "• mpj_operaciones.csv",
+                        "MPJ Finalizado", JOptionPane.INFORMATION_MESSAGE);
+                });
+                
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this,
+                        "❌ Error en MPJ Express: " + e.getMessage() + "\n\n" +
+                        "Asegúrate de tener MPJ Express instalado y configurado.",
+                        "Error MPJ", JOptionPane.ERROR_MESSAGE);
+                });
+                e.printStackTrace();
+            }
+        }).start();
+    }
+    
     private void iniciarSimulador() {
         if (simulador != null && simulador.estaEjecutando()) {
             return;
@@ -152,14 +199,14 @@ public class ProyectoPCyPoto2025 extends JFrame {
         simulador.iniciar();
         
         JOptionPane.showMessageDialog(this,
-            "✅ 5 Cores ejecutándose en paralelo\n\n" +
+            "✅ 5 Cores locales ejecutándose en paralelo\n\n" +
             "🔵 Core 0: Semáforos\n" +
             "🔴 Core 1: Variables de Condición\n" +
             "🟢 Core 2: Monitores\n" +
             "🟠 Core 3: Mutex\n" +
             "🟣 Core 4: Barreras\n\n" +
             "Las gráficas muestran datos REALES de cada core.",
-            "5 Cores Activos", JOptionPane.INFORMATION_MESSAGE);
+            "5 Cores Locales Activos", JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void detenerSimulador() {
@@ -173,32 +220,41 @@ public class ProyectoPCyPoto2025 extends JFrame {
         String info = """
             <html>
             <h2>Simulador de 5 Cores en Paralelo</h2>
-            <p><b>¿Qué hace?</b></p>
+            
+            <p><b>🎯 Dos Modos de Ejecución:</b></p>
+            
+            <p><b>1. MPJ Express (Distribuido):</b></p>
             <ul>
-                <li>Ejecuta 5 threads en paralelo (simulando 5 cores)</li>
-                <li><span style='color:blue'>Core 0</span>: Semáforos</li>
-                <li><span style='color:red'>Core 1</span>: Variables de Condición</li>
-                <li><span style='color:green'>Core 2</span>: Monitores</li>
-                <li><span style='color:orange'>Core 3</span>: Mutex</li>
-                <li><span style='color:purple'>Core 4</span>: Barreras</li>
+                <li>Ejecuta 5 procesos REALES en paralelo</li>
+                <li>Usa MPJ Express para computación distribuida</li>
+                <li>Genera archivos CSV con métricas detalladas</li>
+                <li>Más preciso para análisis de rendimiento</li>
             </ul>
-            <p><b>Funcionamiento:</b></p>
+            
+            <p><b>2. Cores Locales (Threads):</b></p>
             <ul>
-                <li>Cada core ejecuta 200 operaciones</li>
-                <li>Se miden operaciones exitosas vs conflictos</li>
-                <li>Las gráficas se actualizan cada 10 operaciones</li>
-                <li>Los datos son REALES de cada mecanismo de sincronización</li>
+                <li>Ejecuta 5 threads en paralelo en una sola JVM</li>
+                <li>Más rápido para demostraciones</li>
+                <li>Datos en tiempo real en la interfaz</li>
             </ul>
-            <p><b>Interpretación:</b></p>
+            
+            <p><b>🔧 Configuración MPJ:</b></p>
             <ul>
-                <li>Líneas altas = Mejor eficiencia</li>
-                <li>Líneas bajas = Más conflictos</li>
-                <li>Monitores generalmente tienen mejor rendimiento</li>
+                <li>Ejecutar con: <code>mpjrun -np 5 -cp target/classes SyncMetricsMPJ</code></li>
+                <li>Requiere MPJ Express instalado</li>
+            </ul>
+            
+            <p><b>📊 Métricas Colectadas:</b></p>
+            <ul>
+                <li>Tiempos de ejecución por operación</li>
+                <li>Operaciones exitosas vs conflictos</li>
+                <li>Eficiencia de cada mecanismo</li>
+                <li>Comparación en tiempo real</li>
             </ul>
             </html>
             """;
         
-        JOptionPane.showMessageDialog(this, info, "Info 5 Cores", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, info, "Info 5 Cores MPJ", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private JMenuItem crearItemSync(String nombre, SyncMode modo) {
@@ -239,7 +295,7 @@ public class ProyectoPCyPoto2025 extends JFrame {
         lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
         p.add(lbl, BorderLayout.NORTH);
         p.add(inner, BorderLayout.CENTER);
-        return p;
+        return p;SS
     }
 
     public static void main(String[] args) {

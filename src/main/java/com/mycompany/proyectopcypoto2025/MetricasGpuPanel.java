@@ -58,7 +58,7 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
         dataset.addSeries(serieVarCondicion);
 
         chart = ChartFactory.createXYLineChart(
-                "Métricas de sincronización (GPU/MPJ)",
+                "Métricas de sincronización (GPU/MPJ) - 5 Cores en Paralelo",
                 "Tiempo / Iteración",
                 "Valor / Tiempo (ms)",
                 dataset,
@@ -70,9 +70,18 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
 
         XYPlot plot = chart.getXYPlot();
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+        
+        // Configurar colores y estilos para cada serie
+        renderer.setSeriesPaint(0, Color.RED);        // Mutex
+        renderer.setSeriesPaint(1, Color.BLUE);       // Semáforos
+        renderer.setSeriesPaint(2, Color.GREEN);      // Monitores
+        renderer.setSeriesPaint(3, Color.ORANGE);     // Barreras
+        renderer.setSeriesPaint(4, Color.MAGENTA);    // Variables Condición
+        
         for (int i = 0; i < dataset.getSeriesCount(); i++) {
             renderer.setSeriesLinesVisible(i, true);
-            renderer.setSeriesShapesVisible(i, false);
+            renderer.setSeriesShapesVisible(i, true);
+            renderer.setSeriesStroke(i, new BasicStroke(2.0f));
         }
         plot.setRenderer(renderer);
 
@@ -91,7 +100,7 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
     private void initSlider() {
         slider = new JSlider(JSlider.HORIZONTAL, 0, windowSize, 0);
         slider.setPaintTicks(true);
-        slider.setPaintLabels(false);
+        slider.setPaintLabels(true);
         slider.setMajorTickSpacing(windowSize / 5);
         slider.setEnabled(true);
 
@@ -127,6 +136,7 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
             case CARRUSEL -> {
                 slider.setEnabled(false);
                 mostrarSoloSerie(0);
+                iniciarCarrusel();
             }
             case ACORDEON -> {
                 slider.setEnabled(false);
@@ -152,8 +162,10 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
 
     @Override
     public void demo() {
-        // MPJ es la fuente de datos; aquí solo limpiamos
-        reset();
+        // Simular datos de demo si no hay datos MPJ
+        if (serieMutex.getItemCount() == 0) {
+            simularDatosDemo();
+        }
     }
 
     public void setPaused(boolean paused) {
@@ -162,14 +174,24 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
 
     /**
      * Carga los datos generados por SyncMetricsMPJ.
-     * Lee mpj_metrics.csv desde el directorio del proyecto.
+     * Lee mpj_tiempos.csv desde el directorio del proyecto.
      */
     public void cargarDatosDesdeMPJ() {
-        Path csvPath = Path.of(System.getProperty("user.dir"), "mpj_metrics.csv");
+        Path csvPath = Path.of(System.getProperty("user.dir"), "mpj_tiempos.csv");
 
         if (!Files.exists(csvPath)) {
-            System.err.println("MetricasGpuPanel: NO se encontró mpj_metrics.csv en: " + csvPath);
-            return;
+            System.err.println("MetricasGpuPanel: NO se encontró mpj_tiempos.csv en: " + csvPath);
+            
+            // Intentar con el archivo antiguo
+            csvPath = Path.of(System.getProperty("user.dir"), "mpj_metrics.csv");
+            if (!Files.exists(csvPath)) {
+                JOptionPane.showMessageDialog(this,
+                    "❌ No se encontraron archivos MPJ\n\n" +
+                    "Ejecuta primero: MPJ Express (5 Cores)\n" +
+                    "para generar los datos.",
+                    "Datos No Encontrados", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
 
         try {
@@ -188,40 +210,55 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
 
             for (String line : lines) {
                 String[] parts = line.split(",");
-                if (parts.length != 6) continue;
+                if (parts.length < 6) continue;
 
-                int iter = Integer.parseInt(parts[0].trim());
-                double mutex   = Double.parseDouble(parts[1].trim());
-                double semaf   = Double.parseDouble(parts[2].trim());
-                double mon     = Double.parseDouble(parts[3].trim());
-                double barr    = Double.parseDouble(parts[4].trim());
-                double varCond = Double.parseDouble(parts[5].trim());
+                try {
+                    int iter = Integer.parseInt(parts[0].trim());
+                    double semaforos = Double.parseDouble(parts[1].trim());
+                    double varCond = Double.parseDouble(parts[2].trim());
+                    double monitores = Double.parseDouble(parts[3].trim());
+                    double mutex = Double.parseDouble(parts[4].trim());
+                    double barreras = Double.parseDouble(parts[5].trim());
 
-                serieMutex.add(iter, mutex);
-                serieSemaforos.add(iter, semaf);
-                serieMonitores.add(iter, mon);
-                serieBarreras.add(iter, barr);
-                serieVarCondicion.add(iter, varCond);
+                    serieSemaforos.add(iter, semaforos);
+                    serieVarCondicion.add(iter, varCond);
+                    serieMonitores.add(iter, monitores);
+                    serieMutex.add(iter, mutex);
+                    serieBarreras.add(iter, barreras);
 
-                if (iter > maxIter) maxIter = iter;
-                count++;
+                    if (iter > maxIter) maxIter = iter;
+                    count++;
+                } catch (NumberFormatException e) {
+                    System.err.println("Error parseando línea: " + line);
+                }
             }
 
             System.out.println("MetricasGpuPanel: se cargaron " + count +
                     " filas desde " + csvPath);
 
+            // Ajustar slider y dominio
             slider.setMaximum(Math.max(windowSize, maxIter));
             int from = Math.max(0, maxIter - windowSize);
             updateDomainRange(from);
             slider.setValue(from);
 
+            JOptionPane.showMessageDialog(this,
+                "✅ Datos MPJ cargados correctamente\n\n" +
+                "• " + count + " iteraciones cargadas\n" +
+                "• 5 cores distribuidos\n" +
+                "• Gráficas actualizadas",
+                "Datos Cargados", JOptionPane.INFORMATION_MESSAGE);
+
         } catch (IOException e) {
             System.err.println("MetricasGpuPanel: error leyendo CSV");
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "❌ Error leyendo archivo MPJ: " + e.getMessage(),
+                "Error de Lectura", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // ================= auxiliares =================
+    // ================= Métodos auxiliares =================
 
     private void setAllSeriesVisible(boolean visible) {
         XYPlot plot = chart.getXYPlot();
@@ -235,5 +272,60 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
         for (int i = 0; i < dataset.getSeriesCount(); i++) {
             plot.getRenderer().setSeriesVisible(i, i == indexVisible);
         }
+    }
+
+    private void iniciarCarrusel() {
+        Timer carruselTimer = new Timer(3000, e -> {
+            int currentVisible = getSerieVisible();
+            int nextVisible = (currentVisible + 1) % dataset.getSeriesCount();
+            mostrarSoloSerie(nextVisible);
+        });
+        carruselTimer.start();
+    }
+
+    private int getSerieVisible() {
+        XYPlot plot = chart.getXYPlot();
+        for (int i = 0; i < dataset.getSeriesCount(); i++) {
+            if (plot.getRenderer().isSeriesVisible(i)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private void simularDatosDemo() {
+        reset();
+        
+        for (int i = 0; i < 100; i++) {
+            serieSemaforos.add(i, 10 + Math.sin(i * 0.1) * 5 + Math.random() * 2);
+            serieVarCondicion.add(i, 12 + Math.cos(i * 0.15) * 4 + Math.random() * 3);
+            serieMonitores.add(i, 8 + Math.sin(i * 0.2) * 3 + Math.random() * 1);
+            serieMutex.add(i, 15 + Math.cos(i * 0.25) * 6 + Math.random() * 4);
+            serieBarreras.add(i, 11 + Math.sin(i * 0.3) * 4 + Math.random() * 2);
+        }
+        
+        slider.setMaximum(100);
+        updateDomainRange(50);
+        slider.setValue(50);
+    }
+
+    /**
+     * Método para actualización en tiempo real desde los cores
+     */
+    public void actualizarMetricasTiempoReal(int core, int exitosas, int conflictos) {
+        double eficiencia = (exitosas + conflictos) > 0 ? 
+            (100.0 * exitosas / (exitosas + conflictos)) : 0.0;
+        
+        int tiempo = (int) (System.currentTimeMillis() / 1000); // Timestamp simplificado
+        
+        switch (core) {
+            case 0 -> serieSemaforos.add(tiempo, eficiencia);
+            case 1 -> serieVarCondicion.add(tiempo, eficiencia);
+            case 2 -> serieMonitores.add(tiempo, eficiencia);
+            case 3 -> serieMutex.add(tiempo, eficiencia);
+            case 4 -> serieBarreras.add(tiempo, eficiencia);
+        }
+        
+        repaint();
     }
 }
