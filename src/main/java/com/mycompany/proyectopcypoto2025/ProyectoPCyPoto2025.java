@@ -2,18 +2,16 @@ package com.mycompany.proyectopcypoto2025;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 public class ProyectoPCyPoto2025 extends JFrame {
     private final PanelProblemas izq = new PanelProblemas();
     private final GrafoPanel derG = new GrafoPanel();
     private final MetricasGpuPanel derM = new MetricasGpuPanel();
     private final MetricasGpuCollector metricasCollector = new MetricasGpuCollector();
-    
-    private SimuladorCincoCore simulador;
-    private JCheckBoxMenuItem simuladorMenuItem;
 
     public ProyectoPCyPoto2025() {
-        super("Proyecto PCyP Otoño 2025 - Animaciones + Métricas GPU + 5 Cores MPJ");
+        super("Proyecto PCyP Otoño 2025 - GPU Cluster + MPJ Express (5 Cores)");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1280, 800));
         setLocationByPlatform(true);
@@ -22,92 +20,85 @@ public class ProyectoPCyPoto2025 extends JFrame {
         derM.setMetricasCollector(metricasCollector);
 
         JSplitPane right = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                wrap("Grafo de Recursos", derG),
-                wrap("Métricas GPU - 5 Cores MPJ en Paralelo", derM));
+                wrap("📊 Grafo de Recursos", derG),
+                wrap("📈 Métricas GPU - 5 Cores MPJ Distribuidos", derM));
         right.setResizeWeight(0.6);
 
         JSplitPane root = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                wrap("Animaciones de Problemas", izq),
+                wrap("🎬 Animaciones de Problemas Clásicos", izq),
                 right);
         root.setResizeWeight(0.5);
 
         getContentPane().add(root, BorderLayout.CENTER);
-        derM.demo();
-        
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent e) {
-                detenerSimulador();
-            }
-        });
     }
 
     private JMenuBar menu() {
         JMenuBar mb = new JMenuBar();
 
+        // ========== MENÚ ARCHIVO ==========
         JMenu archivo = new JMenu("Archivo");
         JMenuItem salir = new JMenuItem("Salir");
-        salir.addActionListener(e -> {
-            detenerSimulador();
-            System.exit(0);
-        });
+        salir.addActionListener(e -> System.exit(0));
         archivo.add(salir);
         mb.add(archivo);
 
-        // Menú Simulador 5 Cores
-        JMenu coresMenu = new JMenu("5 Cores MPJ");
-        simuladorMenuItem = new JCheckBoxMenuItem("🚀 Activar 5 Cores Locales");
-        simuladorMenuItem.addActionListener(e -> {
-            if (simuladorMenuItem.isSelected()) {
-                iniciarSimulador();
-            } else {
-                detenerSimulador();
-            }
-        });
+        // ========== MENÚ MPJ EXPRESS ==========
+        JMenu mpjMenu = new JMenu("🚀 MPJ Express");
         
-        JMenuItem mpjItem = new JMenuItem("🚀 Ejecutar MPJ Express (5 Cores)");
-        mpjItem.addActionListener(e -> ejecutarMPJExpress());
+        JMenuItem ejecutarMPJ = new JMenuItem("▶️ Ejecutar 5 Cores (Genera Datos)");
+        ejecutarMPJ.addActionListener(e -> ejecutarMPJExpress());
         
-        JMenuItem infoCores = new JMenuItem("ℹ Info 5 Cores");
-        infoCores.addActionListener(e -> mostrarInfoCores());
+        JMenuItem cargarDatos = new JMenuItem("📊 Cargar Datos Generados");
+        cargarDatos.addActionListener(e -> derM.cargarDatosDesdeMPJ());
         
-        coresMenu.add(simuladorMenuItem);
-        coresMenu.add(mpjItem);
-        coresMenu.addSeparator();
-        coresMenu.add(infoCores);
-        mb.add(coresMenu);
+        JMenuItem verArchivos = new JMenuItem("📁 Ver Archivos CSV");
+        verArchivos.addActionListener(e -> mostrarArchivosCSV());
+        
+        JMenuItem infoMPJ = new JMenuItem("ℹ️ Info MPJ Express");
+        infoMPJ.addActionListener(e -> mostrarInfoMPJ());
+        
+        mpjMenu.add(ejecutarMPJ);
+        mpjMenu.add(cargarDatos);
+        mpjMenu.addSeparator();
+        mpjMenu.add(verArchivos);
+        mpjMenu.add(infoMPJ);
+        mb.add(mpjMenu);
 
-        JMenu synch = new JMenu("Sincronización");
+        // ========== MENÚ SINCRONIZACIÓN ==========
+        JMenu synch = new JMenu("🔒 Sincronización");
         synch.add(crearItemSync("Semáforos", SyncMode.SEMAFOROS));
-        synch.add(crearItemSync("Variables de condición", SyncMode.VAR_CONDICION));
+        synch.add(crearItemSync("Variables de Condición", SyncMode.VAR_CONDICION));
         synch.add(crearItemSync("Monitores", SyncMode.MONITORES));
         synch.add(crearItemSync("Mutex", SyncMode.MUTEX));
         synch.add(crearItemSync("Barreras", SyncMode.BARRERAS));
         mb.add(synch);
 
-        JMenu graf = new JMenu("Gráfica");
-        JMenuItem scroll = new JMenuItem("Scroll");
+        // ========== MENÚ GRÁFICA ==========
+        JMenu graf = new JMenu("📈 Gráfica");
+        JMenuItem scroll = new JMenuItem("Scroll (Desplazamiento)");
         scroll.addActionListener(e -> derM.setMode(MetricasGpuPanel.Mode.SCROLL));
-        JMenuItem carr = new JMenuItem("Carrusel");
+        
+        JMenuItem carr = new JMenuItem("Carrusel (Rotación Automática)");
         carr.addActionListener(e -> derM.setMode(MetricasGpuPanel.Mode.CARRUSEL));
-        JMenuItem acor = new JMenuItem("Acordeón");
+        
+        JMenuItem acor = new JMenuItem("Acordeón (Todas Visibles)");
         acor.addActionListener(e -> derM.setMode(MetricasGpuPanel.Mode.ACORDEON));
-        JMenuItem reset = new JMenuItem("Reset Métricas");
+        
+        JMenuItem reset = new JMenuItem("🔄 Reset Métricas");
         reset.addActionListener(e -> {
             derM.reset();
             metricasCollector.reset();
         });
-        JMenuItem cargarMPJ = new JMenuItem("📊 Cargar Datos MPJ");
-        cargarMPJ.addActionListener(e -> derM.cargarDatosDesdeMPJ());
+        
         graf.add(scroll);
         graf.add(carr);
         graf.add(acor);
         graf.addSeparator();
         graf.add(reset);
-        graf.add(cargarMPJ);
         mb.add(graf);
 
-        JMenu prob = new JMenu("Problemas");
+        // ========== MENÚ PROBLEMAS ==========
+        JMenu prob = new JMenu("🎭 Problemas");
         prob.add(crearItemProblema("Productor-Consumidor"));
         prob.add(crearItemProblema("Cena de Filósofos"));
         prob.add(crearItemProblema("Barbero Dormilón"));
@@ -116,146 +107,189 @@ public class ProyectoPCyPoto2025 extends JFrame {
         prob.add(crearItemProblema("Clúster GPU"));
         mb.add(prob);
 
-        JMenu dead = new JMenu("Deadlock");
-        JMenuItem eje = new JMenuItem("Ejecutar");
-        eje.addActionListener(e -> {
+        // ========== MENÚ DEADLOCK ==========
+        JMenu dead = new JMenu("⚠️ Deadlock");
+        JMenuItem ejecutar = new JMenuItem("Ejecutar (Provocar)");
+        ejecutar.addActionListener(e -> {
             derG.deadlockEjecutar();
             if ("Cena de Filósofos".equals(izq.getCurrentKey())) {
-                for (Component c : izq.getComponents()) {
-                    if (c instanceof CenaFilosofosPanel) {
-                        ((CenaFilosofosPanel) c).setDeadlock(true);
-                        break;
-                    }
-                }
-                derM.setPaused(true);
+                activarDeadlockFilosofos(true);
             }
         });
-        JMenuItem ev = new JMenuItem("Evitar");
-        ev.addActionListener(e -> {
+        
+        JMenuItem evitar = new JMenuItem("Evitar (Resolver)");
+        evitar.addActionListener(e -> {
             derG.deadlockEvitar();
             if ("Cena de Filósofos".equals(izq.getCurrentKey())) {
-                for (Component c : izq.getComponents()) {
-                    if (c instanceof CenaFilosofosPanel) {
-                        ((CenaFilosofosPanel) c).setDeadlock(false);
-                        break;
-                    }
-                }
-                derM.setPaused(false);
+                activarDeadlockFilosofos(false);
             }
         });
-        dead.add(eje);
-        dead.add(ev);
+        
+        dead.add(ejecutar);
+        dead.add(evitar);
         mb.add(dead);
 
         return mb;
     }
+
+    // ========== EJECUTAR MPJ EXPRESS ==========
     
     private void ejecutarMPJExpress() {
+        // Crear diálogo de progreso
+        JDialog progressDialog = new JDialog(this, "Ejecutando MPJ Express", true);
+        progressDialog.setLayout(new BorderLayout(10, 10));
+        progressDialog.setSize(500, 200);
+        progressDialog.setLocationRelativeTo(this);
+        
+        JTextArea logArea = new JTextArea();
+        logArea.setEditable(false);
+        logArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        JScrollPane scrollPane = new JScrollPane(logArea);
+        
+        JProgressBar progressBar = new JProgressBar();
+        progressBar.setIndeterminate(true);
+        
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.add(new JLabel("🚀 Ejecutando 5 cores MPJ en paralelo..."), BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(progressBar, BorderLayout.SOUTH);
+        
+        progressDialog.add(panel);
+        
+        // Ejecutar en thread separado
         new Thread(() -> {
             try {
-                JOptionPane.showMessageDialog(this,
-                    "🚀 Iniciando MPJ Express con 5 cores...\n\n" +
-                    "🔵 Core 0: Semáforos\n" +
-                    "🔴 Core 1: Variables de Condición\n" +
-                    "🟢 Core 2: Monitores\n" +
-                    "🟠 Core 3: Mutex\n" +
-                    "🟣 Core 4: Barreras\n\n" +
-                    "Los datos se guardarán en mpj_metrics.csv",
-                    "Ejecutando MPJ Express", JOptionPane.INFORMATION_MESSAGE);
-                    
+                SwingUtilities.invokeLater(() -> {
+                    logArea.append("═══════════════════════════════════════════\n");
+                    logArea.append("  EJECUTANDO MPJ EXPRESS - 5 CORES\n");
+                    logArea.append("═══════════════════════════════════════════\n\n");
+                    logArea.append("Core 0: SEMÁFOROS 🔵\n");
+                    logArea.append("Core 1: VARIABLES DE CONDICIÓN 🔴\n");
+                    logArea.append("Core 2: MONITORES 🟢\n");
+                    logArea.append("Core 3: MUTEX 🟠\n");
+                    logArea.append("Core 4: BARRERAS 🟣\n\n");
+                    logArea.append("Iniciando simulación...\n\n");
+                });
+                
+                // Ejecutar SyncMetricsMPJ
                 String[] args = new String[0];
                 SyncMetricsMPJ.main(args);
                 
-                // Cuando termina MPJ, cargar los datos en el panel
                 SwingUtilities.invokeLater(() -> {
+                    progressBar.setIndeterminate(false);
+                    progressBar.setValue(100);
+                    logArea.append("\n✅ EJECUCIÓN COMPLETADA\n\n");
+                    logArea.append("Archivos generados:\n");
+                    logArea.append("  • mpj_tiempos.csv\n");
+                    logArea.append("  • mpj_operaciones.csv\n\n");
+                    logArea.append("Cargando datos en gráficas...\n");
+                    
+                    // Cargar automáticamente los datos
                     derM.cargarDatosDesdeMPJ();
-                    JOptionPane.showMessageDialog(this,
-                        "✅ Ejecución MPJ Express completada\n" +
-                        "📊 Datos cargados en las gráficas\n\n" +
-                        "Archivos generados:\n" +
-                        "• mpj_tiempos.csv\n" +
-                        "• mpj_operaciones.csv",
-                        "MPJ Finalizado", JOptionPane.INFORMATION_MESSAGE);
+                    
+                    JButton cerrarBtn = new JButton("Cerrar");
+                    cerrarBtn.addActionListener(ev -> progressDialog.dispose());
+                    panel.add(cerrarBtn, BorderLayout.SOUTH);
+                    
+                    logArea.append("\n✅ Datos cargados exitosamente!\n");
                 });
                 
-            } catch (Exception e) {
+            } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(this,
-                        "❌ Error en MPJ Express: " + e.getMessage() + "\n\n" +
-                        "Asegúrate de tener MPJ Express instalado y configurado.",
-                        "Error MPJ", JOptionPane.ERROR_MESSAGE);
+                    progressBar.setIndeterminate(false);
+                    logArea.append("\n❌ ERROR: " + ex.getMessage() + "\n\n");
+                    logArea.append("Verifica:\n");
+                    logArea.append("  1. MPJ Express está instalado\n");
+                    logArea.append("  2. mpj.jar está en lib/\n");
+                    logArea.append("  3. El proyecto está compilado\n");
+                    
+                    JButton cerrarBtn = new JButton("Cerrar");
+                    cerrarBtn.addActionListener(ev -> progressDialog.dispose());
+                    panel.add(cerrarBtn, BorderLayout.SOUTH);
                 });
-                e.printStackTrace();
+                ex.printStackTrace();
             }
         }).start();
+        
+        progressDialog.setVisible(true);
     }
-    
-    private void iniciarSimulador() {
-        if (simulador != null && simulador.estaEjecutando()) {
-            return;
+
+    private void mostrarArchivosCSV() {
+        File tiempos = new File(System.getProperty("user.dir"), "mpj_tiempos.csv");
+        File operaciones = new File(System.getProperty("user.dir"), "mpj_operaciones.csv");
+        
+        StringBuilder info = new StringBuilder();
+        info.append("<html><h2>📁 Archivos CSV Generados</h2>");
+        
+        if (tiempos.exists()) {
+            info.append("<p>✅ <b>mpj_tiempos.csv</b></p>");
+            info.append("<p>   Tamaño: ").append(tiempos.length() / 1024).append(" KB</p>");
+            info.append("<p>   Ruta: ").append(tiempos.getAbsolutePath()).append("</p><br>");
+        } else {
+            info.append("<p>❌ <b>mpj_tiempos.csv</b> no encontrado</p><br>");
         }
         
-        simulador = new SimuladorCincoCore(metricasCollector);
-        simulador.iniciar();
-        
-        JOptionPane.showMessageDialog(this,
-            "✅ 5 Cores locales ejecutándose en paralelo\n\n" +
-            "🔵 Core 0: Semáforos\n" +
-            "🔴 Core 1: Variables de Condición\n" +
-            "🟢 Core 2: Monitores\n" +
-            "🟠 Core 3: Mutex\n" +
-            "🟣 Core 4: Barreras\n\n" +
-            "Las gráficas muestran datos REALES de cada core.",
-            "5 Cores Locales Activos", JOptionPane.INFORMATION_MESSAGE);
-    }
-    
-    private void detenerSimulador() {
-        if (simulador != null) {
-            simulador.detener();
-            simulador = null;
+        if (operaciones.exists()) {
+            info.append("<p>✅ <b>mpj_operaciones.csv</b></p>");
+            info.append("<p>   Tamaño: ").append(operaciones.length() / 1024).append(" KB</p>");
+            info.append("<p>   Ruta: ").append(operaciones.getAbsolutePath()).append("</p>");
+        } else {
+            info.append("<p>❌ <b>mpj_operaciones.csv</b> no encontrado</p>");
         }
+        
+        if (!tiempos.exists() && !operaciones.exists()) {
+            info.append("<br><p>⚠️ Ejecuta primero MPJ Express para generar los archivos.</p>");
+        }
+        
+        info.append("</html>");
+        
+        JOptionPane.showMessageDialog(this, info.toString(), 
+                "Archivos CSV", JOptionPane.INFORMATION_MESSAGE);
     }
-    
-    private void mostrarInfoCores() {
+
+    private void mostrarInfoMPJ() {
         String info = """
             <html>
-            <h2>Simulador de 5 Cores en Paralelo</h2>
+            <h2>🚀 MPJ Express - 5 Cores Distribuidos</h2>
             
-            <p><b>🎯 Dos Modos de Ejecución:</b></p>
-            
-            <p><b>1. MPJ Express (Distribuido):</b></p>
+            <h3>📊 Qué hace cada Core:</h3>
             <ul>
-                <li>Ejecuta 5 procesos REALES en paralelo</li>
-                <li>Usa MPJ Express para computación distribuida</li>
-                <li>Genera archivos CSV con métricas detalladas</li>
-                <li>Más preciso para análisis de rendimiento</li>
+                <li><b>Core 0 (SEMÁFOROS):</b> Simula acquire/release con contadores</li>
+                <li><b>Core 1 (VAR. CONDICIÓN):</b> Simula wait/notify con condiciones</li>
+                <li><b>Core 2 (MONITORES):</b> Simula entrada/salida sincronizada</li>
+                <li><b>Core 3 (MUTEX):</b> Simula lock/unlock exclusivo</li>
+                <li><b>Core 4 (BARRERAS):</b> Simula puntos de sincronización grupal</li>
             </ul>
             
-            <p><b>2. Cores Locales (Threads):</b></p>
+            <h3>📈 Métricas Recopiladas:</h3>
             <ul>
-                <li>Ejecuta 5 threads en paralelo en una sola JVM</li>
-                <li>Más rápido para demostraciones</li>
-                <li>Datos en tiempo real en la interfaz</li>
+                <li><b>Tiempo por iteración:</b> Latencia de cada operación</li>
+                <li><b>Operaciones exitosas:</b> Sin conflictos</li>
+                <li><b>Conflictos:</b> Operaciones bloqueadas/fallidas</li>
+                <li><b>Eficiencia:</b> (Exitosas / Total) × 100</li>
             </ul>
             
-            <p><b>🔧 Configuración MPJ:</b></p>
+            <h3>🔧 Archivos Generados:</h3>
             <ul>
-                <li>Ejecutar con: <code>mpjrun -np 5 -cp target/classes SyncMetricsMPJ</code></li>
-                <li>Requiere MPJ Express instalado</li>
+                <li><b>mpj_tiempos.csv:</b> Tiempos por iteración y core</li>
+                <li><b>mpj_operaciones.csv:</b> Operaciones y eficiencia detallada</li>
             </ul>
             
-            <p><b>📊 Métricas Colectadas:</b></p>
+            <h3>⚙️ Configuración:</h3>
             <ul>
-                <li>Tiempos de ejecución por operación</li>
-                <li>Operaciones exitosas vs conflictos</li>
-                <li>Eficiencia de cada mecanismo</li>
-                <li>Comparación en tiempo real</li>
+                <li>Iteraciones por core: 200</li>
+                <li>Operaciones por iteración: 10</li>
+                <li>Total de operaciones: 10,000 (5 cores × 200 × 10)</li>
             </ul>
             </html>
             """;
         
-        JOptionPane.showMessageDialog(this, info, "Info 5 Cores MPJ", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, info, 
+                "Info MPJ Express", JOptionPane.INFORMATION_MESSAGE);
     }
+
+    // ========== UTILIDADES ==========
 
     private JMenuItem crearItemSync(String nombre, SyncMode modo) {
         JMenuItem item = new JMenuItem(nombre);
@@ -288,15 +322,28 @@ public class ProyectoPCyPoto2025 extends JFrame {
         return item;
     }
 
+    private void activarDeadlockFilosofos(boolean activar) {
+        for (Component c : izq.getComponents()) {
+            if (c instanceof CenaFilosofosPanel) {
+                ((CenaFilosofosPanel) c).setDeadlock(activar);
+                break;
+            }
+        }
+    }
+
     private static JComponent wrap(String title, JComponent inner) {
         JPanel p = new JPanel(new BorderLayout());
         JLabel lbl = new JLabel(title);
-        lbl.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
-        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
+        lbl.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 13f));
+        lbl.setOpaque(true);
+        lbl.setBackground(new Color(240, 240, 245));
         p.add(lbl, BorderLayout.NORTH);
         p.add(inner, BorderLayout.CENTER);
-        return p;SS
+        return p;
     }
+
+    // ========== MAIN ==========
 
     public static void main(String[] args) {
         try {
@@ -307,6 +354,16 @@ public class ProyectoPCyPoto2025 extends JFrame {
         SwingUtilities.invokeLater(() -> {
             ProyectoPCyPoto2025 frame = new ProyectoPCyPoto2025();
             frame.setVisible(true);
+            
+            // Mensaje de bienvenida
+            JOptionPane.showMessageDialog(frame,
+                "🎓 Proyecto PCyP Otoño 2025\n\n" +
+                "Para comenzar:\n" +
+                "1. Ve a: 🚀 MPJ Express → ▶️ Ejecutar 5 Cores\n" +
+                "2. Espera a que se generen los datos\n" +
+                "3. Las gráficas se cargarán automáticamente\n\n" +
+                "Explora los diferentes problemas clásicos de concurrencia!",
+                "Bienvenido", JOptionPane.INFORMATION_MESSAGE);
         });
     }
 }

@@ -1,8 +1,6 @@
 package com.mycompany.proyectopcypoto2025;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,47 +18,55 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+/**
+ * Panel de Métricas GPU con integración MPJ Express definitiva
+ * Muestra gráficas de eficiencia de 5 mecanismos de sincronización
+ */
 public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
 
+    // Modos de visualización
     public enum Mode { SCROLL, CARRUSEL, ACORDEON }
 
     private Mode mode = Mode.SCROLL;
     private int windowSize = 50;
 
+    // Dataset para las gráficas
     private final XYSeriesCollection dataset = new XYSeriesCollection();
-    private final XYSeries serieMutex        = new XYSeries("Mutex");
     private final XYSeries serieSemaforos    = new XYSeries("Semáforos");
-    private final XYSeries serieMonitores    = new XYSeries("Monitores");
-    private final XYSeries serieBarreras     = new XYSeries("Barreras");
     private final XYSeries serieVarCondicion = new XYSeries("Variables de Condición");
-
-    private MetricasGpuCollector collector;
+    private final XYSeries serieMonitores    = new XYSeries("Monitores");
+    private final XYSeries serieMutex        = new XYSeries("Mutex");
+    private final XYSeries serieBarreras     = new XYSeries("Barreras");
 
     private JFreeChart chart;
     private ChartPanel chartPanel;
     private JSlider slider;
+    private JLabel statusLabel;
+    private Timer carruselTimer;
+
+    // Estado de carga de datos
+    private boolean datosRealesCargados = false;
+    private int maxIteraciones = 0;
 
     public MetricasGpuPanel() {
         setLayout(new BorderLayout());
         initChart();
         initSlider();
-    }
-
-    public void setMetricasCollector(MetricasGpuCollector collector) {
-        this.collector = collector;
+        initStatusPanel();
     }
 
     private void initChart() {
-        dataset.addSeries(serieMutex);
+        // Agregar series en orden específico para colores consistentes
         dataset.addSeries(serieSemaforos);
-        dataset.addSeries(serieMonitores);
-        dataset.addSeries(serieBarreras);
         dataset.addSeries(serieVarCondicion);
+        dataset.addSeries(serieMonitores);
+        dataset.addSeries(serieMutex);
+        dataset.addSeries(serieBarreras);
 
         chart = ChartFactory.createXYLineChart(
-                "Métricas de sincronización (GPU/MPJ) - 5 Cores en Paralelo",
-                "Tiempo / Iteración",
-                "Valor / Tiempo (ms)",
+                "Eficiencia de Mecanismos de Sincronización en GPU Cluster",
+                "Tiempo (t)",
+                "Eficiencia (%)",
                 dataset,
                 PlotOrientation.VERTICAL,
                 true,
@@ -68,29 +74,36 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
                 false
         );
 
+        // Configurar colores y estilos
         XYPlot plot = chart.getXYPlot();
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setDomainGridlinePaint(new Color(200, 200, 200));
+        plot.setRangeGridlinePaint(new Color(200, 200, 200));
+
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
         
-        // Configurar colores y estilos para cada serie
-        renderer.setSeriesPaint(0, Color.RED);        // Mutex
-        renderer.setSeriesPaint(1, Color.BLUE);       // Semáforos
-        renderer.setSeriesPaint(2, Color.GREEN);      // Monitores
-        renderer.setSeriesPaint(3, Color.ORANGE);     // Barreras
-        renderer.setSeriesPaint(4, Color.MAGENTA);    // Variables Condición
+        // Colores que coinciden con tu gráfica original
+        renderer.setSeriesPaint(0, new Color(0, 0, 255));      // Semáforos - Azul
+        renderer.setSeriesPaint(1, new Color(255, 0, 0));      // Var Condición - Rojo
+        renderer.setSeriesPaint(2, new Color(0, 200, 0));      // Monitores - Verde
+        renderer.setSeriesPaint(3, new Color(255, 165, 0));    // Mutex - Naranja
+        renderer.setSeriesPaint(4, new Color(148, 0, 211));    // Barreras - Púrpura
         
         for (int i = 0; i < dataset.getSeriesCount(); i++) {
             renderer.setSeriesLinesVisible(i, true);
-            renderer.setSeriesShapesVisible(i, true);
+            renderer.setSeriesShapesVisible(i, false); // Sin puntos para mejor visualización
             renderer.setSeriesStroke(i, new BasicStroke(2.0f));
         }
         plot.setRenderer(renderer);
 
-        NumberAxis domain = (NumberAxis) plot.getDomainAxis();
-        domain.setAutoRange(false);
-        domain.setRange(0, windowSize);
+        // Configurar ejes
+        NumberAxis domainAxis = (NumberAxis) plot.getDomainAxis();
+        domainAxis.setAutoRange(false);
+        domainAxis.setRange(0, windowSize);
 
-        NumberAxis range = (NumberAxis) plot.getRangeAxis();
-        range.setAutoRange(true);
+        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+        rangeAxis.setAutoRange(false);
+        rangeAxis.setRange(0, 100); // Eficiencia en porcentaje
 
         chartPanel = new ChartPanel(chart);
         chartPanel.setMouseWheelEnabled(true);
@@ -98,35 +111,169 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
     }
 
     private void initSlider() {
+        JPanel sliderPanel = new JPanel(new BorderLayout());
+        
         slider = new JSlider(JSlider.HORIZONTAL, 0, windowSize, 0);
         slider.setPaintTicks(true);
         slider.setPaintLabels(true);
         slider.setMajorTickSpacing(windowSize / 5);
         slider.setEnabled(true);
 
-        slider.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                if (mode != Mode.SCROLL) return;
+        slider.addChangeListener(e -> {
+            if (mode == Mode.SCROLL) {
                 int value = slider.getValue();
                 updateDomainRange(value);
             }
         });
 
-        add(slider, BorderLayout.SOUTH);
+        sliderPanel.add(slider, BorderLayout.CENTER);
+        add(sliderPanel, BorderLayout.SOUTH);
+    }
+
+    private void initStatusPanel() {
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        statusLabel = new JLabel("📊 Esperando datos MPJ...");
+        statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        statusPanel.add(statusLabel);
+        add(statusPanel, BorderLayout.NORTH);
     }
 
     private void updateDomainRange(int from) {
         XYPlot plot = chart.getXYPlot();
         double start = Math.max(0, from);
-        double end = start + windowSize;
+        double end = Math.min(start + windowSize, maxIteraciones);
         plot.getDomainAxis().setRange(start, end);
     }
 
-    // ================= API pública =================
+    // ================= CARGA DE DATOS MPJ =================
+
+    /**
+     * Carga los datos reales generados por SyncMetricsMPJ
+     */
+    public void cargarDatosDesdeMPJ() {
+        Path csvPath = Path.of(System.getProperty("user.dir"), "mpj_tiempos.csv");
+
+        if (!Files.exists(csvPath)) {
+            JOptionPane.showMessageDialog(this,
+                "❌ No se encontró mpj_tiempos.csv\n\n" +
+                "Ejecuta primero:\n" +
+                "1. Compila: scripts/compilar_todo.bat\n" +
+                "2. Ejecuta MPJ: scripts/ejecutar_mpj.bat\n\n" +
+                "O usa el menú: 5 Cores MPJ → Ejecutar MPJ Express",
+                "Datos No Encontrados", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            reset();
+
+            List<String> lines = Files.readAllLines(csvPath, StandardCharsets.UTF_8);
+            if (lines.isEmpty()) {
+                throw new IOException("Archivo CSV vacío");
+            }
+
+            // Saltar encabezado
+            if (lines.get(0).toLowerCase().contains("iter")) {
+                lines.remove(0);
+            }
+
+            int count = 0;
+
+            for (String line : lines) {
+                String[] parts = line.split(",");
+                if (parts.length < 6) continue;
+
+                try {
+                    int iter = Integer.parseInt(parts[0].trim());
+                    double semaforos = Double.parseDouble(parts[1].trim());
+                    double varCond = Double.parseDouble(parts[2].trim());
+                    double monitores = Double.parseDouble(parts[3].trim());
+                    double mutex = Double.parseDouble(parts[4].trim());
+                    double barreras = Double.parseDouble(parts[5].trim());
+
+                    // Agregar a las series
+                    serieSemaforos.add(iter, semaforos);
+                    serieVarCondicion.add(iter, varCond);
+                    serieMonitores.add(iter, monitores);
+                    serieMutex.add(iter, mutex);
+                    serieBarreras.add(iter, barreras);
+
+                    if (iter > maxIteraciones) {
+                        maxIteraciones = iter;
+                    }
+                    count++;
+                } catch (NumberFormatException e) {
+                    System.err.println("⚠️ Error parseando línea: " + line);
+                }
+            }
+
+            // Actualizar interfaz
+            datosRealesCargados = true;
+            slider.setMaximum(Math.max(windowSize, maxIteraciones));
+            
+            // Mostrar última ventana de datos
+            int from = Math.max(0, maxIteraciones - windowSize);
+            updateDomainRange(from);
+            slider.setValue(from);
+
+            statusLabel.setText("✅ Datos MPJ cargados: " + count + " iteraciones desde 5 cores");
+            statusLabel.setForeground(new Color(0, 150, 0));
+
+            System.out.println("✅ MetricasGpuPanel: Cargadas " + count + " filas desde " + csvPath);
+
+            // Calcular y mostrar estadísticas
+            mostrarEstadisticas();
+
+        } catch (IOException e) {
+            statusLabel.setText("❌ Error cargando datos MPJ");
+            statusLabel.setForeground(Color.RED);
+            
+            JOptionPane.showMessageDialog(this,
+                "❌ Error leyendo archivo MPJ:\n" + e.getMessage() + "\n\n" +
+                "Verifica que el archivo esté correctamente generado.",
+                "Error de Lectura", JOptionPane.ERROR_MESSAGE);
+            
+            e.printStackTrace();
+        }
+    }
+
+    private void mostrarEstadisticas() {
+        StringBuilder stats = new StringBuilder();
+        stats.append("📊 ESTADÍSTICAS DE EFICIENCIA\n");
+        stats.append("═".repeat(50)).append("\n\n");
+
+        String[] nombres = {"Semáforos", "Var. Condición", "Monitores", "Mutex", "Barreras"};
+        XYSeries[] series = {serieSemaforos, serieVarCondicion, serieMonitores, serieMutex, serieBarreras};
+
+        for (int i = 0; i < series.length; i++) {
+            XYSeries serie = series[i];
+            if (serie.getItemCount() == 0) continue;
+
+            double suma = 0, min = 100, max = 0;
+            for (int j = 0; j < serie.getItemCount(); j++) {
+                double val = serie.getY(j).doubleValue();
+                suma += val;
+                if (val < min) min = val;
+                if (val > max) max = val;
+            }
+            double promedio = suma / serie.getItemCount();
+
+            stats.append(String.format("%-20s: Promedio: %.2f%%, Min: %.2f%%, Max: %.2f%%\n",
+                    nombres[i], promedio, min, max));
+        }
+
+        System.out.println(stats.toString());
+    }
+
+    // ================= MODOS DE VISUALIZACIÓN =================
 
     public void setMode(Mode mode) {
         this.mode = mode;
+
+        // Detener carrusel anterior si existe
+        if (carruselTimer != null && carruselTimer.isRunning()) {
+            carruselTimer.stop();
+        }
 
         switch (mode) {
             case SCROLL -> {
@@ -147,119 +294,6 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
         repaint();
     }
 
-    @Override
-    public void reset() {
-        serieMutex.clear();
-        serieSemaforos.clear();
-        serieMonitores.clear();
-        serieBarreras.clear();
-        serieVarCondicion.clear();
-
-        slider.setValue(0);
-        slider.setMaximum(windowSize);
-        updateDomainRange(0);
-    }
-
-    @Override
-    public void demo() {
-        // Simular datos de demo si no hay datos MPJ
-        if (serieMutex.getItemCount() == 0) {
-            simularDatosDemo();
-        }
-    }
-
-    public void setPaused(boolean paused) {
-        // no usamos animación local en esta versión
-    }
-
-    /**
-     * Carga los datos generados por SyncMetricsMPJ.
-     * Lee mpj_tiempos.csv desde el directorio del proyecto.
-     */
-    public void cargarDatosDesdeMPJ() {
-        Path csvPath = Path.of(System.getProperty("user.dir"), "mpj_tiempos.csv");
-
-        if (!Files.exists(csvPath)) {
-            System.err.println("MetricasGpuPanel: NO se encontró mpj_tiempos.csv en: " + csvPath);
-            
-            // Intentar con el archivo antiguo
-            csvPath = Path.of(System.getProperty("user.dir"), "mpj_metrics.csv");
-            if (!Files.exists(csvPath)) {
-                JOptionPane.showMessageDialog(this,
-                    "❌ No se encontraron archivos MPJ\n\n" +
-                    "Ejecuta primero: MPJ Express (5 Cores)\n" +
-                    "para generar los datos.",
-                    "Datos No Encontrados", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-        }
-
-        try {
-            reset();
-
-            List<String> lines = Files.readAllLines(csvPath, StandardCharsets.UTF_8);
-            if (lines.isEmpty()) return;
-
-            // Quitar encabezado si existe
-            if (lines.get(0).toLowerCase().contains("iter")) {
-                lines.remove(0);
-            }
-
-            int maxIter = 0;
-            int count = 0;
-
-            for (String line : lines) {
-                String[] parts = line.split(",");
-                if (parts.length < 6) continue;
-
-                try {
-                    int iter = Integer.parseInt(parts[0].trim());
-                    double semaforos = Double.parseDouble(parts[1].trim());
-                    double varCond = Double.parseDouble(parts[2].trim());
-                    double monitores = Double.parseDouble(parts[3].trim());
-                    double mutex = Double.parseDouble(parts[4].trim());
-                    double barreras = Double.parseDouble(parts[5].trim());
-
-                    serieSemaforos.add(iter, semaforos);
-                    serieVarCondicion.add(iter, varCond);
-                    serieMonitores.add(iter, monitores);
-                    serieMutex.add(iter, mutex);
-                    serieBarreras.add(iter, barreras);
-
-                    if (iter > maxIter) maxIter = iter;
-                    count++;
-                } catch (NumberFormatException e) {
-                    System.err.println("Error parseando línea: " + line);
-                }
-            }
-
-            System.out.println("MetricasGpuPanel: se cargaron " + count +
-                    " filas desde " + csvPath);
-
-            // Ajustar slider y dominio
-            slider.setMaximum(Math.max(windowSize, maxIter));
-            int from = Math.max(0, maxIter - windowSize);
-            updateDomainRange(from);
-            slider.setValue(from);
-
-            JOptionPane.showMessageDialog(this,
-                "✅ Datos MPJ cargados correctamente\n\n" +
-                "• " + count + " iteraciones cargadas\n" +
-                "• 5 cores distribuidos\n" +
-                "• Gráficas actualizadas",
-                "Datos Cargados", JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (IOException e) {
-            System.err.println("MetricasGpuPanel: error leyendo CSV");
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                "❌ Error leyendo archivo MPJ: " + e.getMessage(),
-                "Error de Lectura", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    // ================= Métodos auxiliares =================
-
     private void setAllSeriesVisible(boolean visible) {
         XYPlot plot = chart.getXYPlot();
         for (int i = 0; i < dataset.getSeriesCount(); i++) {
@@ -275,10 +309,13 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
     }
 
     private void iniciarCarrusel() {
-        Timer carruselTimer = new Timer(3000, e -> {
+        carruselTimer = new Timer(3000, e -> {
             int currentVisible = getSerieVisible();
             int nextVisible = (currentVisible + 1) % dataset.getSeriesCount();
             mostrarSoloSerie(nextVisible);
+            
+            String[] nombres = {"Semáforos", "Variables de Condición", "Monitores", "Mutex", "Barreras"};
+            statusLabel.setText("🔄 Carrusel: " + nombres[nextVisible]);
         });
         carruselTimer.start();
     }
@@ -293,39 +330,45 @@ public class MetricasGpuPanel extends JPanel implements Reseteable, Demoable {
         return 0;
     }
 
-    private void simularDatosDemo() {
-        reset();
+    // ================= INTERFAZ RESETEABLE Y DEMOABLE =================
+
+    @Override
+    public void reset() {
+        serieSemaforos.clear();
+        serieVarCondicion.clear();
+        serieMonitores.clear();
+        serieMutex.clear();
+        serieBarreras.clear();
+
+        datosRealesCargados = false;
+        maxIteraciones = 0;
+        slider.setValue(0);
+        slider.setMaximum(windowSize);
+        updateDomainRange(0);
         
-        for (int i = 0; i < 100; i++) {
-            serieSemaforos.add(i, 10 + Math.sin(i * 0.1) * 5 + Math.random() * 2);
-            serieVarCondicion.add(i, 12 + Math.cos(i * 0.15) * 4 + Math.random() * 3);
-            serieMonitores.add(i, 8 + Math.sin(i * 0.2) * 3 + Math.random() * 1);
-            serieMutex.add(i, 15 + Math.cos(i * 0.25) * 6 + Math.random() * 4);
-            serieBarreras.add(i, 11 + Math.sin(i * 0.3) * 4 + Math.random() * 2);
-        }
-        
-        slider.setMaximum(100);
-        updateDomainRange(50);
-        slider.setValue(50);
+        statusLabel.setText("📊 Esperando datos MPJ...");
+        statusLabel.setForeground(Color.BLACK);
     }
 
-    /**
-     * Método para actualización en tiempo real desde los cores
-     */
-    public void actualizarMetricasTiempoReal(int core, int exitosas, int conflictos) {
-        double eficiencia = (exitosas + conflictos) > 0 ? 
-            (100.0 * exitosas / (exitosas + conflictos)) : 0.0;
-        
-        int tiempo = (int) (System.currentTimeMillis() / 1000); // Timestamp simplificado
-        
-        switch (core) {
-            case 0 -> serieSemaforos.add(tiempo, eficiencia);
-            case 1 -> serieVarCondicion.add(tiempo, eficiencia);
-            case 2 -> serieMonitores.add(tiempo, eficiencia);
-            case 3 -> serieMutex.add(tiempo, eficiencia);
-            case 4 -> serieBarreras.add(tiempo, eficiencia);
+    @Override
+    public void demo() {
+        if (!datosRealesCargados) {
+            JOptionPane.showMessageDialog(this,
+                "⚠️ No hay datos reales cargados\n\n" +
+                "Para ver la demo:\n" +
+                "1. Ejecuta MPJ Express desde el menú\n" +
+                "2. O ejecuta manualmente: scripts/ejecutar_mpj.bat",
+                "Demo Requiere Datos MPJ", JOptionPane.INFORMATION_MESSAGE);
         }
-        
-        repaint();
+    }
+
+    // ================= UTILIDADES =================
+
+    public boolean tieneDatosCargados() {
+        return datosRealesCargados;
+    }
+
+    public int getMaxIteraciones() {
+        return maxIteraciones;
     }
 }
